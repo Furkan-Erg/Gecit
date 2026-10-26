@@ -81,6 +81,7 @@ function render(s) {
 
   renderPresets(s, busy);
   renderDns(s);
+  renderBrowser(s.browser);
   $("autostart").checked = s.autostart;
   $("uninstall").disabled = s.busy;
   $("version").textContent = "v" + s.version;
@@ -269,6 +270,28 @@ $("dns-apply").addEventListener("click", async () => {
     toast(e.message, "error");
   }
 });
+
+// ---- Gizli Tarayıcı ----
+function renderBrowser(b) {
+  document.querySelector(".browser-hero").dataset.state = b.open ? "running" : "stopped";
+  $("browser-status").textContent = b.open ? "Açık" : "Kapalı";
+  $("browser-open").textContent = b.open ? "Pencereye git" : "Gizli pencere aç";
+  const date = b.listDate ? new Date(b.listDate).toLocaleDateString("tr-TR") : null;
+  $("browser-list").textContent = b.listCount.toLocaleString("tr-TR") + " alan adı" + (date ? `, liste ${date}` : "");
+  $("browser-adblock").checked = b.adblock;
+  $("browser-engines").replaceChildren(...b.engines.map((e) => {
+    const chip = document.createElement("button");
+    chip.className = "chip" + (e.id === b.search ? " selected" : "");
+    chip.textContent = e.name;
+    chip.addEventListener("click", () => call("browser.settings", { search: e.id }).then(render));
+    return chip;
+  }));
+}
+
+$("browser-open").addEventListener("click", () => call("browser.open"));
+$("browser-adblock").addEventListener("change", (e) => call("browser.settings", { adblock: e.target.checked }).then(render));
+$("browser-shortcut").addEventListener("click", () =>
+  call("browser.shortcut").then(() => toast("Masaüstüne \"Gizli Tarayıcı\" kısayolu eklendi.", "ok"), (e) => toast(e.message, "error")));
 
 // Measure once, the first time the DNS page is opened.
 let dnsVisited = false;

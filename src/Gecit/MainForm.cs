@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Gecit.Browser;
 using Gecit.Dns;
 using Gecit.Dpi;
 using Gecit.Net;
@@ -26,6 +27,9 @@ sealed partial class MainForm : Form
     readonly DpiService dpi = new();
     readonly Settings settings = Settings.Load();
     readonly EventWaitHandle showEvent = new(false, EventResetMode.AutoReset, Program.ShowEventName);
+    readonly EventWaitHandle browserEvent = new(false, EventResetMode.AutoReset, Program.BrowserEventName);
+    readonly AdBlocker adBlocker = new();
+    BrowserForm? browser;
 
     bool allowShow;
     bool exiting;
@@ -35,7 +39,7 @@ sealed partial class MainForm : Form
     DnsStatus dns;
     string dnsKey = "";
 
-    public MainForm(bool startHidden)
+    public MainForm(bool startHidden, bool openBrowser)
     {
         allowShow = !startHidden;
         Text = "Geçit";
@@ -54,7 +58,47 @@ sealed partial class MainForm : Form
         poll.Start();
 
         ThreadPool.RegisterWaitForSingleObject(showEvent, (_, _) => BeginInvoke(ShowFromTray), null, -1, false);
+        ThreadPool.RegisterWaitForSingleObject(browserEvent, (_, _) => BeginInvoke(() => OpenBrowser()), null, -1, false);
         _ = RestoreDpiAsync();
+        LoadBlocklist();
+        if (openBrowser)
+            OpenBrowser();
+    }
+
+    async void LoadBlocklist()
+    {
+        await adBlocker.LoadAsync();
+        PushState();
+    }
+
+    void OpenBrowser(string? url = null)
+    {
+        if (browser is null || browser.IsDisposed)
+        {
+            browser = new BrowserForm(settings, adBlocker, iconOn, url);
+            browser.FormClosed += (_, _) => { browser = null; PushState(); };
+            browser.Show();
+            PushState();
+            return;
+        }
+        if (url is not null)
+            browser.OpenUrl(url);
+        if (browser.WindowState == FormWindowState.Minimized)
+            browser.WindowState = FormWindowState.Normal;
+        browser.Activate();
+    }
+
+    static void CreateBrowserShortcut()
+    {
+        var shellType = Type.GetTypeFromProgID("WScript.Shell") ?? throw new InvalidOperationException("WScript.Shell yok.");
+        dynamic shell = Activator.CreateInstance(shellType)!;
+        string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "Gizli Tarayıcı.lnk");
+        dynamic link = shell.CreateShortcut(path);
+        link.TargetPath = Environment.ProcessPath;
+        link.Arguments = "--browser";
+        link.IconLocation = Environment.ProcessPath + ",0";
+        link.Description = "Geçit · Gizli Tarayıcı";
+        link.Save();
     }
 
     // Keeps the window hidden when started with --tray, without breaking the message loop.
@@ -71,7 +115,7 @@ sealed partial class MainForm : Form
     protected override async void OnShown(EventArgs e)
     {
         base.OnShown(e);
-        UseDarkTitleBar();
+        NativeTheme.UseDarkTitleBar(Handle);
         await InitWebViewAsync();
     }
 
@@ -215,6 +259,7 @@ sealed partial class MainForm : Form
         menu.Items.Add("Geçit'i aç", null, (_, _) => ShowFromTray());
         trayToggle.Click += async (_, _) => await SetDpiAsync(status.State != DpiState.Running);
         menu.Items.Add(trayToggle);
+        menu.Items.Add("Gizli tarayıcı", null, (_, _) => OpenBrowser());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Çıkış", null, (_, _) => ExitApp());
         tray.ContextMenuStrip = menu;
@@ -309,6 +354,19 @@ sealed partial class MainForm : Form
                 await ApplyDnsAsync(Enum.Parse<DnsMode>(args!["mode"]!.GetValue<string>(), ignoreCase: true),
                     args["provider"]!.GetValue<string>());
                 return BuildState();
+            case "browser.open":
+                OpenBrowser();
+                return null;
+            case "browser.settings":
+                if (args?["adblock"] is JsonNode ab)
+                    settings.BrowserAdBlock = ab.GetValue<bool>();
+                if (args?["search"] is JsonNode se)
+                    settings.BrowserSearch = SearchEngines.Get(se.GetValue<string>()).Id;
+                settings.Save();
+                return BuildState();
+            case "browser.shortcut":
+                CreateBrowserShortcut();
+                return null;
             case "app.autostart":
                 Autostart.Set(args!["on"]!.GetValue<bool>());
                 return BuildState();
@@ -344,6 +402,15 @@ sealed partial class MainForm : Form
             adapters = dns.Adapters.Select(a => new { a.Name, servers = a.V4Dns.Concat(a.V6Dns) }),
         },
         dnsProviders = DnsProviders.All.Select(p => new { p.Id, p.Name, p.Tag, servers = p.V4 }),
+        browser = new
+        {
+            open = browser is { IsDisposed: false },
+            adblock = settings.BrowserAdBlock,
+            search = settings.BrowserSearch,
+            engines = SearchEngines.All.Select(e => new { e.Id, e.Name }),
+            listCount = adBlocker.Count,
+            listDate = adBlocker.ListDate,
+        },
     };
 
     void PushState() => Post(new { @event = "state", data = BuildState() });
@@ -371,12 +438,4 @@ sealed partial class MainForm : Form
         return new Icon(s);
     }
 
-    void UseDarkTitleBar()
-    {
-        int on = 1;
-        DwmSetWindowAttribute(Handle, 20, ref on, sizeof(int));   // DWMWA_USE_IMMERSIVE_DARK_MODE
-    }
-
-    [LibraryImport("dwmapi.dll")]
-    private static partial int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
 }

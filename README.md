@@ -6,7 +6,7 @@ PC'yi açar açmaz açılan, interneti ve bilgisayarı en iyi şekilde kullandı
 |---|---|
 | **Engel Aşma**: GoodbyeDPI-Turkey ile DPI + DNS engellerini VPN'siz aşar | ✅ v0.1 |
 | **Akıllı DNS**: sağlayıcı hız ölçümü, DNS engeli teşhisi, Hızlı DNS ya da şifreli DNS (DoH) | ✅ v0.2 |
-| **Gizli Tarayıcı**: iz bırakmayan, reklam engelleyicili sekmeli tarayıcı | yakında |
+| **Gizli Tarayıcı**: iz bırakmayan, reklam engelleyicili sekmeli tarayıcı | ✅ v0.3 |
 | **Oyun Modu**: arka plan uygulamalarını dondurur, güç planı, öncelik | yakında |
 | **İnternet**: canlı ping/jitter, hız testi, uygulama başına trafik | yakında |
 
@@ -50,6 +50,14 @@ Gecit.exe (normal kullanıcı)            Gecit.exe --elevated install <yöntem>
 - Test: `Gecit.Dns.exe cloudflare --console --port 5454` (5353 mDNS'e ait, kullanmayın). Tek sorgu için: `Gecit.Dns.exe quad9 --query discord.com`. Not: Windows `nslookup` `-port=` seçeneğini yok sayıp 53'e sorar.
 
 Bu bağlantıda (Türk Telekom, 2026-10-26) ölçülenler: operatör engelli adları 195.175.254.2'ye çeviriyor, ama başka sunuculara giden 53 portu trafiğine karışmıyor. Yani Hızlı DNS de DNS engelini aşar. DoH sorgu süreleri: Google ~54 ms, AdGuard ~56, Cloudflare ~61, Quad9 ~64, Yandex ~113.
+
+### Gizli Tarayıcı
+
+- `BrowserForm`: üstte HTML araç çubuğu (`wwwroot/browser/chrome.html`), altında her sekme için bir WebView2. Sekmelerin hepsi tek bir **InPrivate** profilini (`gecit-private`) paylaşır. WebView2 bu profilin verisini son sekme kapanınca siler; "Temizle" ayrıca `ClearBrowsingDataAsync` çağırır.
+- Reklam/takipçi engeli: Edge izleme koruması "Katı" + `AdBlocker` (StevenBlack unified hosts, yaklaşık 74 bin alan adı, `%LOCALAPPDATA%\Gecit\blocklist-hosts.txt`, haftalık yenilenir). Alan adı ve tüm üst alan adlarıyla eşleşir. Engellenen istekler `WebResourceRequested` içinde 403 ile kesilir. Kullanıcının açtığı ana sayfa hiçbir zaman engellenmez.
+- Açılır pencereler gerçek sekme olarak verilir (`NewWindow`), böylece "Google ile giriş yap" gibi `window.opener` akışları çalışır.
+- Araç çubuğu sayfası C#'a komut gönderebildiği için, sayfalardan gelen veriler (başlık vb.) oraya yalnızca `textContent` ile yazılır.
+- `Gecit.exe --browser` doğrudan tarayıcıyı açar (masaüstü kısayolu bunu kullanır). Uygulama zaten açıksa ona sinyal gönderilir.
 
 ## Üçüncü taraf dosyalar
 

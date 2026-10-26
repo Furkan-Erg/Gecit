@@ -35,7 +35,7 @@
       </button>
       <button class="nav-item" data-page="browser">
         <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><circle cx="12" cy="15" r="2.5"/></svg>
-        Gizli Tarayıcı <span class="soon">yakında</span>
+        Gizli Tarayıcı
       </button>
       <button class="nav-item" data-page="game">
         <svg viewBox="0 0 24 24"><path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 15h-4l-1 .6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16.5" cy="12" r=".8"/><circle cx="18" cy="13.6" r=".8"/></svg>
@@ -152,14 +152,48 @@
         Tam gizlilik için VPN gerekir.</p>
     </section>
     <section class="page" id="page-browser">
-      <header class="page-head"><h1>Gizli Tarayıcı</h1><p>İz bırakmayan, kendi içinde çalışan bir tarayıcı.</p></header>
-      <div class="card soon-card">
-        <div class="soon-badge">Yakında</div>
-        <ul class="plan">
-          <li>Sekmeli tarama, kapanınca geçmiş, çerez ve önbellek silinir</li>
-          <li>Dahili reklam ve takipçi engelleyici</li>
-          <li>Engel aşma bu tarayıcıda da otomatik çalışır</li>
-        </ul>
+      <header class="page-head"><h1>Gizli Tarayıcı</h1><p>İz bırakmayan, reklamsız, sekmeli bir tarayıcı. Engel aşma ve Akıllı DNS burada da geçerli.</p></header>
+
+      <div class="hero browser-hero">
+        <div class="hero-text">
+          <div class="hero-label">Gizli pencere</div>
+          <div class="hero-status" id="browser-status">Kapalı</div>
+          <ul class="plan compact">
+            <li>Geçmiş, çerez, oturum ve önbellek pencere kapanınca silinir</li>
+            <li>Reklam ve takipçiler engellenir (<span id="browser-list"></span>)</li>
+            <li>Tek tuşla "Temizle": tüm sekmeleri kapatır, her şeyi siler</li>
+          </ul>
+        </div>
+        <div class="browser-actions">
+          <button class="btn big" id="browser-open">Gizli pencere aç</button>
+          <button class="link-btn" id="browser-shortcut">Masaüstüne kısayol oluştur</button>
+        </div>
+      </div>
+
+      <h2 class="section-title">Ayarlar</h2>
+      <div class="card rows">
+        <label class="row">
+          <div>
+            <div class="row-title">Reklam ve takipçi engelleyici</div>
+            <div class="row-sub">Bilinen reklam, takip ve zararlı alan adlarına giden istekleri keser; Edge'in "Katı" izleme korumasını açar. YouTube video reklamlarını engellemez.</div>
+          </div>
+          <input type="checkbox" class="switch" id="browser-adblock">
+        </label>
+        <div class="row">
+          <div>
+            <div class="row-title">Arama motoru</div>
+            <div class="row-sub">Adres çubuğuna yazılan aramalar için.</div>
+          </div>
+          <div class="chips" id="browser-engines"></div>
+        </div>
+      </div>
+      <div class="kbd-help">
+        <span><kbd>Ctrl</kbd><kbd>T</kbd> yeni sekme</span>
+        <span><kbd>Ctrl</kbd><kbd>W</kbd> sekmeyi kapat</span>
+        <span><kbd>Ctrl</kbd><kbd>L</kbd> adres çubuğu</span>
+        <span><kbd>Ctrl</kbd><kbd>Tab</kbd> sonraki sekme</span>
+        <span><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Del</kbd> temizle</span>
+        <span><kbd>F11</kbd> tam ekran</span>
       </div>
     </section>
     <section class="page" id="page-game">

@@ -9,6 +9,9 @@ sealed class Settings
     // What the user last chose with the main toggle; restored when the app starts.
     public bool DpiWanted { get; set; }
 
+    public bool BrowserAdBlock { get; set; } = true;
+    public string BrowserSearch { get; set; } = "duckduckgo";
+
     static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
     public static Settings Load()

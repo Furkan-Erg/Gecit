@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <title>Gizli Tarayıcı</title>
+  <link rel="stylesheet" href="chrome.css">
+</head>
+<body>
+  <div class="tabstrip">
+    <div class="tabs" id="tabs"></div>
+    <button class="newtab" id="newtab" title="Yeni sekme (Ctrl+T)">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <div class="private-badge" title="Bu penceredeki hiçbir şey kaydedilmez">
+      <svg viewBox="0 0 24 24"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><path d="M4 4l16 16"/></svg>
+      GİZLİ
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="tb" id="back" title="Geri (Alt+Sol)"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="tb" id="forward" title="İleri (Alt+Sağ)"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+    <button class="tb" id="reload" title="Yenile (F5)">
+      <svg class="i-reload" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+      <svg class="i-stop" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <button class="tb" id="home" title="Ana sayfa"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg></button>
+
+    <form class="address" id="address-form" autocomplete="off">
+      <svg class="lock" id="lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      <input id="address" spellcheck="false" placeholder="Ara veya adres yaz">
+      <span class="shield" id="shield" title="Bu sayfada engellenen reklam ve takipçiler">
+        <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg>
+        <span id="blocked">0</span>
+      </span>
+    </form>
+
+    <button class="clear" id="clear" title="Tüm sekmeleri kapat ve her şeyi sil (Ctrl+Shift+Del)">
+      <svg viewBox="0 0 24 24"><path d="M12 3c1 3 4 4.5 4 8a4 4 0 0 1-8 0c0-1.6.7-2.7 1.5-3.5.2 1.5 1 2.5 2 2.5 0-2.5-.5-4.5.5-7z"/><path d="M6 21h12"/></svg>
+      Temizle
+    </button>
+  </div>
+  <script src="chrome.js"></script>
+</body>
+</html>

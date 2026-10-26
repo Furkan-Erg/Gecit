@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <title>Yeni sekme</title>
+  <style>
+    :root { --cyan: #00f0ff; --magenta: #ff2aaa; --text: #ebe8ff; --muted: #8a85a9; color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 34px;
+      background:
+        radial-gradient(800px 420px at 50% 0%, rgba(255, 42, 170, .10), transparent 60%),
+        radial-gradient(700px 400px at 50% 110%, rgba(0, 240, 255, .08), transparent 60%),
+        #0a0814;
+      color: var(--text); font: 14px/1.5 "Segoe UI", system-ui, sans-serif;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand svg { width: 54px; height: 54px; filter: drop-shadow(0 0 12px rgba(0, 240, 255, .45)); }
+    .brand-name { font: 700 30px/1 "JetBrainsMono Nerd Font", Consolas, monospace; letter-spacing: .2em; }
+    .brand-sub { color: var(--magenta); font: 600 11px "JetBrainsMono Nerd Font", Consolas, monospace; letter-spacing: .24em; margin-top: 6px; }
+    form { width: min(620px, 90vw); position: relative; }
+    input {
+      width: 100%; height: 52px; padding: 0 22px 0 52px; border-radius: 999px;
+      background: #120f25; border: 1px solid rgba(255, 255, 255, .1); color: var(--text);
+      font: 16px "Segoe UI", system-ui, sans-serif; outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input:focus { border-color: rgba(0, 240, 255, .55); box-shadow: 0 0 0 4px rgba(0, 240, 255, .12), 0 10px 40px rgba(0, 0, 0, .4); }
+    form svg { position: absolute; left: 20px; top: 17px; width: 18px; height: 18px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; }
+    .engine { text-align: center; color: var(--muted); font-size: 12px; margin-top: 10px; }
+    .tiles { display: grid; grid-template-columns: repeat(6, 92px); gap: 12px; }
+    .tile { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 6px; border-radius: 14px; color: var(--text); text-decoration: none; font-size: 12.5px; transition: background .15s; }
+    .tile:hover { background: rgba(255, 255, 255, .05); }
+    .tile span { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font: 700 18px "JetBrainsMono Nerd Font", Consolas, monospace; background: #171332; border: 1px solid rgba(255, 255, 255, .08); }
+    .note { max-width: 560px; text-align: center; color: var(--muted); font-size: 12.5px; }
+    .note b { color: var(--text); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="brand">
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#00f0ff"/><stop offset="1" stop-color="#ff2aaa"/></linearGradient></defs>
+      <path d="M12 38V24a12 12 0 0 1 24 0v14" fill="none" stroke="url(#g)" stroke-width="4.5" stroke-linecap="round"/>
+      <path d="M20 23l7 6-7 6" fill="none" stroke="url(#g)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div><div class="brand-name">GEÇİT</div><div class="brand-sub">GİZLİ SEKME</div></div>
+  </div>
+
+  <div>
+    <form id="search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="q" autofocus spellcheck="false" placeholder="Ara veya adres yaz">
+    </form>
+    <div class="engine" id="engine"></div>
+  </div>
+
+  <div class="tiles">
+    <a class="tile" href="https://discord.com/app"><span style="color:#8c9eff">D</span>Discord</a>
+    <a class="tile" href="https://www.youtube.com/"><span style="color:#ff5c5c">Y</span>YouTube</a>
+    <a class="tile" href="https://www.reddit.com/"><span style="color:#ff8a4c">R</span>Reddit</a>
+    <a class="tile" href="https://x.com/"><span>X</span>X</a>
+    <a class="tile" href="https://tr.wikipedia.org/"><span>W</span>Vikipedi</a>
+    <a class="tile" href="https://github.com/"><span style="color:#3dffa2">G</span>GitHub</a>
+  </div>
+
+  <p class="note"><b>Bu pencerede hiçbir şey saklanmaz.</b> Geçmiş, çerezler, oturumlar ve önbellek pencere kapanınca
+    ya da <b>Temizle</b>'ye basınca silinir. Reklam ve takipçiler engellenir.</p>
+
+  <script>
+    // Same list as SearchEngines.cs
+    const engines = {
+      duckduckgo: ["DuckDuckGo", "https://duckduckgo.com/?q="],
+      brave: ["Brave Search", "https://search.brave.com/search?q="],
+      startpage: ["Startpage", "https://www.startpage.com/do/search?q="],
+      google: ["Google", "https://www.google.com/search?q="],
+    };
+    const [name, base] = engines[new URLSearchParams(location.search).get("e")] ?? engines.duckduckgo;
+    document.getElementById("engine").textContent = name + " ile aranır";
+    document.getElementById("search").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const text = document.getElementById("q").value.trim();
+      if (!text) return;
+      const looksLikeHost = !text.includes(" ") && text.includes(".");
+      location.href = /^https?:\/\//i.test(text) ? text
+        : looksLikeHost ? "https://" + text
+        : base + encodeURIComponent(text);
+    });
+  </script>
+</body>
+</html>
