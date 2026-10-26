@@ -39,6 +39,25 @@ static class Elevated
         }
     }
 
+    // For long-running elevated helpers that talk back over a pipe instead of an exit code.
+    public static Process StartDetached(params string[] args)
+    {
+        var psi = new ProcessStartInfo(Environment.ProcessPath!)
+        {
+            UseShellExecute = true,
+            Verb = "runas",
+            WindowStyle = ProcessWindowStyle.Hidden,
+        };
+        psi.ArgumentList.Add("--elevated");
+        foreach (string a in args)
+            psi.ArgumentList.Add(a);
+        try { return Process.Start(psi)!; }
+        catch (Win32Exception e) when (e.NativeErrorCode == 1223)
+        {
+            throw new InvalidOperationException("Yönetici izni verilmedi.");
+        }
+    }
+
     // Entry point of the elevated process.
     public static int Run(string[] args)
     {
@@ -55,6 +74,9 @@ static class Elevated
                     break;
                 case "uninstall":
                     UninstallAll();
+                    break;
+                case "netmon":     // netmon <pipe> <uiPid>
+                    Net.TrafficCollector.Run(args[1], int.Parse(args[2]));
                     break;
                 default:
                     throw new ArgumentException($"Bilinmeyen komut: {string.Join(' ', args)}");

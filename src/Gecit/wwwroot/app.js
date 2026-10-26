@@ -16,6 +16,7 @@ function call(cmd, args) {
 host?.addEventListener("message", (e) => {
   const m = e.data;
   if (m.event === "state") return render(m.data);
+  if (m.event === "speed") return showSpeed(m.data);
   if (m.event === "toast") return toast(m.data.message, m.data.level);
   const p = pending.get(m.id);
   if (!p) return;
@@ -441,7 +442,10 @@ function onGamePage(visible) {
 }
 
 document.querySelectorAll(".nav-item").forEach((btn) =>
-  btn.addEventListener("click", () => onGamePage(btn.dataset.page === "game")));
+  btn.addEventListener("click", () => {
+    onGamePage(btn.dataset.page === "game");
+    onNetPage(btn.dataset.page === "net");
+  }));
 
 $("game-power").addEventListener("click", () =>
   call("game.toggle", { on: !state.game.active }).then(render, (e) => toast(e.message, "error")));
@@ -453,6 +457,205 @@ $("add-game").addEventListener("submit", (e) => {
   const exe = $("add-game-exe").value.trim();
   if (!exe) return;
   call("game.addGame", { exe }).then((s) => { $("add-game-exe").value = ""; render(s); toast(exe + " oyun listesine eklendi.", "ok"); });
+});
+
+// ---- İnternet ----
+let netTimer = null;
+let trafficTimer = null;
+let netTarget = "1.1.1.1";
+
+function fmtRate(bytesPerSec) {
+  const kbit = bytesPerSec * 8 / 1000;
+  return kbit >= 1000 ? (kbit / 1000).toFixed(1) + " Mbps" : Math.round(kbit) + " kbps";
+}
+function fmtBytes(b) {
+  return b >= 1024 ** 3 ? (b / 1024 ** 3).toFixed(2) + " GB" : b >= 1024 ** 2 ? (b / 1024 ** 2).toFixed(1) + " MB" : Math.round(b / 1024) + " KB";
+}
+
+function verdict(inet, gw) {
+  if (gw && (gw.lossPercent > 5 || (gw.avgMs ?? 0) > 20))
+    return ["bad", "Sorun evde: modem ya da Wi-Fi bağlantısı zayıf. Kabloyla bağlanmayı veya modeme yaklaşmayı dene."];
+  if (inet.lossPercent > 2)
+    return ["bad", `%${inet.lossPercent.toFixed(0)} paket kaybı var. Modem iyi, sorun operatör hattında olabilir.`];
+  if ((inet.jitterMs ?? 0) > 15 || (inet.avgMs ?? 0) > 120)
+    return ["warn", "Bağlantı dalgalı. Oyunlarda ara ara gecikme hissedebilirsin."];
+  if ((inet.avgMs ?? 99) < 40 && (inet.jitterMs ?? 9) < 5)
+    return ["ok", "Bağlantı oyun için çok iyi."];
+  return ["ok", "Bağlantı oyun için iyi."];
+}
+
+function drawGraph(inet, gw) {
+  const svg = $("net-graph");
+  const W = 600, H = 150, N = 120;
+  const values = [...inet.history, ...(gw?.history ?? [])].filter((v) => v != null);
+  const top = Math.max(50, Math.ceil(Math.max(...values, 0) * 1.25 / 25) * 25);
+  const y = (v) => H - (v / top) * (H - 14) - 2;
+  const x = (i, len) => W - (len - 1 - i) * (W / (N - 1));
+  const path = (hist) => {
+    let d = "", pen = false;
+    hist.forEach((v, i) => {
+      if (v == null) { pen = false; return; }
+      d += (pen ? "L" : "M") + x(i, hist.length).toFixed(1) + "," + y(v).toFixed(1);
+      pen = true;
+    });
+    return d;
+  };
+  let html = "";
+  for (const f of [0.25, 0.5, 0.75, 1]) {
+    const yy = y(top * f);
+    html += `<line class="grid" x1="0" x2="${W}" y1="${yy}" y2="${yy}"/><text class="gl" x="4" y="${yy + 11}">${Math.round(top * f)} ms</text>`;
+  }
+  if (gw) html += `<path class="line pink" d="${path(gw.history)}"/>`;
+  html += `<path class="line cyan" d="${path(inet.history)}"/>`;
+  inet.history.forEach((v, i) => { if (v == null) html += `<rect class="loss" x="${x(i, inet.history.length) - 2}" y="${H - 6}" width="4" height="6"/>`; });
+  svg.innerHTML = html;
+}
+
+async function pollPing() {
+  try {
+    const { internet: inet, gateway: gw } = await call("net.ping");
+    const ms = (v) => (v == null ? "—" : v);
+    $("net-target-label").textContent = inet.target;
+    $("net-ms").innerHTML = `${ms(inet.lastMs)} <small>ms</small>`;
+    $("net-sub").textContent = inet.avgMs == null ? "yanıt yok" :
+      `ort ${Math.round(inet.avgMs)} · dalgalanma ${inet.jitterMs?.toFixed(1) ?? "—"} · kayıp %${inet.lossPercent.toFixed(0)}`;
+    $("net-gw-label").textContent = gw?.target ?? "";
+    $("gw-ms").innerHTML = gw ? `${ms(gw.lastMs)} <small>ms</small>` : "—";
+    $("gw-sub").textContent = gw ? `kayıp %${gw.lossPercent.toFixed(0)}` : "modem bulunamadı";
+    if (inet.history.length >= 3) {
+      const [cls, text] = verdict(inet, gw);
+      const v = $("net-verdict");
+      v.className = "net-verdict " + cls;
+      v.lastElementChild.textContent = text;
+    }
+    drawGraph(inet, gw);
+    document.querySelectorAll("#net-targets .chip").forEach((c) => c.classList.toggle("selected", c.dataset.target === inet.target));
+  } catch { /* next tick */ }
+}
+
+async function pollTraffic() {
+  try {
+    const t = await call("net.traffic");
+    $("tr-toggle").textContent = t.running ? "İzlemeyi durdur" : "İzlemeyi başlat";
+    if (!t.running && !t.apps.length) return;
+    const head = '<div class="tr-row head"><span>Uygulama</span><span class="num">İndirme</span><span class="num">Yükleme</span><span class="num">Toplam</span></div>';
+    const list = $("tr-list");
+    list.innerHTML = head;
+    if (!t.apps.length) {
+      list.insertAdjacentHTML("beforeend", '<div class="empty">Henüz trafik yok…</div>');
+      return;
+    }
+    for (const a of t.apps) {
+      const row = document.createElement("div");
+      row.className = "tr-row";
+      row.innerHTML = `<span class="tr-name"><span class="n"></span><small></small></span>
+        <span class="num rx"></span><span class="num tx"></span><span class="num tot"></span>`;
+      row.querySelector(".n").textContent = a.name;
+      row.querySelector("small").textContent = a.process;
+      row.querySelector(".rx").textContent = a.rxRate ? fmtRate(a.rxRate) : "—";
+      row.querySelector(".rx").classList.toggle("active", a.rxRate > 0);
+      row.querySelector(".tx").textContent = a.txRate ? fmtRate(a.txRate) : "—";
+      row.querySelector(".tx").classList.toggle("active", a.txRate > 0);
+      row.querySelector(".tot").textContent = fmtBytes(a.rxTotal + a.txTotal);
+      list.append(row);
+    }
+  } catch { /* next tick */ }
+}
+
+function onNetPage(visible) {
+  clearInterval(netTimer);
+  clearInterval(trafficTimer);
+  netTimer = trafficTimer = null;
+  if (!visible) {
+    // The elevated monitor only runs while the page is open.
+    call("net.traffic.stop").catch(() => {});
+    $("tr-toggle").textContent = "İzlemeyi başlat";
+    return;
+  }
+  pollPing();
+  netTimer = setInterval(pollPing, 1000);
+}
+
+$("tr-toggle").addEventListener("click", async () => {
+  const btn = $("tr-toggle");
+  btn.disabled = true;
+  try {
+    const t = await call("net.traffic");
+    if (t.running) {
+      await call("net.traffic.stop");
+      clearInterval(trafficTimer);
+      btn.textContent = "İzlemeyi başlat";
+    } else {
+      btn.textContent = "İzin bekleniyor…";
+      await call("net.traffic.start");
+      btn.textContent = "İzlemeyi durdur";
+      pollTraffic();
+      trafficTimer = setInterval(pollTraffic, 1000);
+    }
+  } catch (e) {
+    toast(e.message, "error");
+    btn.textContent = "İzlemeyi başlat";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.querySelectorAll("#net-targets .chip").forEach((c) =>
+  c.addEventListener("click", () => call("net.target", { target: c.dataset.target }).then(pollPing)));
+$("net-custom").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const host = $("net-custom-host").value.trim();
+  if (host) call("net.target", { target: host }).then(pollPing);
+});
+
+// Speed test progress arrives as "speed" events.
+const PHASES = { ping: "Boşta ping ölçülüyor…", download: "İndirme hızı ölçülüyor…", upload: "Yükleme hızı ölçülüyor…", done: "Bitti." };
+function showSpeed(p) {
+  const f = (v) => (v == null ? "–" : v >= 100 ? Math.round(v) : v.toFixed(1));
+  $("sp-down").textContent = f(p.downMbps);
+  $("sp-up").textContent = f(p.upMbps);
+  $("sp-idle").textContent = p.idleMs ?? "–";
+  $("sp-loaded").textContent = p.loadedMs ?? "–";
+  $("sp-phase").textContent = PHASES[p.phase] ?? "";
+  $("sp-progress").style.width = Math.round(p.fraction * 100) + "%";
+}
+
+$("sp-start").addEventListener("click", async () => {
+  const btn = $("sp-start");
+  if (btn.dataset.running) {
+    call("net.speed.stop");
+    return;
+  }
+  btn.dataset.running = "1";
+  btn.textContent = "Durdur";
+  $("sp-grade").textContent = "–";
+  $("sp-grade").className = "grade";
+  showSpeed({ phase: "ping", fraction: 0 });
+  try {
+    const r = await call("net.speed");
+    if (r) {
+      showSpeed({ phase: "done", downMbps: r.downMbps, upMbps: r.upMbps, idleMs: r.idleMs, loadedMs: Math.max(r.downLoadedMs, r.upLoadedMs), fraction: 1 });
+      const g = $("sp-grade");
+      g.textContent = r.grade;
+      g.className = "grade g-" + r.grade[0].toLowerCase();
+      $("sp-grade-sub").textContent = `yükte +${Math.max(r.downLoadedMs, r.upLoadedMs) - r.idleMs} ms`;
+      $("sp-phase").textContent = {
+        A: "Hat dolsa bile ping neredeyse artmıyor: oyun oynarken indirme yapabilirsin.",
+        B: "Hat dolunca ping biraz artıyor; büyük indirmeler sırasında oyunda hafif gecikme olabilir.",
+        C: "Hat dolunca ping belirgin artıyor. Oyun sırasında indirme/yükleme yapma.",
+        D: "Hat dolunca ping çok artıyor. Modemde QoS / SQM açmak çok fayda eder.",
+        F: "Hat dolunca bağlantı neredeyse kilitleniyor. Modemde QoS / SQM ayarı şart.",
+      }[r.grade[0]];
+    } else {
+      $("sp-phase").textContent = "Test durduruldu.";
+    }
+  } catch (e) {
+    toast(e.message, "error");
+    $("sp-phase").textContent = "Test tamamlanamadı.";
+  } finally {
+    delete btn.dataset.running;
+    btn.textContent = "Testi başlat";
+  }
 });
 
 // Measure once, the first time the DNS page is opened.

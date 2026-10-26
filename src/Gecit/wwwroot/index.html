@@ -43,7 +43,7 @@
       </button>
       <button class="nav-item" data-page="net">
         <svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 4-6 5 5"/><path d="M3 21h18"/></svg>
-        İnternet <span class="soon">yakında</span>
+        İnternet
       </button>
       <div class="nav-spacer"></div>
       <button class="nav-item" data-page="settings">
@@ -252,14 +252,56 @@
         8 GB RAM'de bu, takılmaları ve ani FPS düşüşlerini azaltır. Oyunun kendisine hiçbir şey enjekte edilmez; hile korumalarıyla sorun çıkmaz.</p>
     </section>
     <section class="page" id="page-net">
-      <header class="page-head"><h1>İnternet</h1><p>Bağlantının gerçek durumunu gösterir.</p></header>
-      <div class="card soon-card">
-        <div class="soon-badge">Yakında</div>
-        <ul class="plan">
-          <li>Canlı ping ve jitter grafiği</li>
-          <li>Dahili hız testi</li>
-          <li>Hangi uygulama interneti ne kadar kullanıyor</li>
-        </ul>
+      <header class="page-head"><h1>İnternet</h1><p>Bağlantının gerçek durumu: gecikme, dalgalanma, hız ve interneti hangi uygulamanın kullandığı.</p></header>
+
+      <div class="card net-live">
+        <div class="net-metrics">
+          <div class="net-metric">
+            <div class="stat-label">İnternet <span id="net-target-label"></span></div>
+            <div class="big-ms" id="net-ms">…</div>
+            <div class="muted" id="net-sub"></div>
+          </div>
+          <div class="net-metric">
+            <div class="stat-label">Modem <span id="net-gw-label"></span></div>
+            <div class="big-ms gw" id="gw-ms">…</div>
+            <div class="muted" id="gw-sub"></div>
+          </div>
+          <div class="net-verdict" id="net-verdict"><span class="dot"></span><span>Ölçülüyor…</span></div>
+        </div>
+        <svg class="net-graph" id="net-graph" viewBox="0 0 600 150" preserveAspectRatio="none"></svg>
+        <div class="net-graph-legend">
+          <span><i class="lg cyan"></i>İnternet</span><span><i class="lg pink"></i>Modem</span><span><i class="lg red"></i>Kayıp paket</span>
+          <span class="net-target-pick" id="net-targets">
+            <button class="chip" data-target="1.1.1.1">Cloudflare</button>
+            <button class="chip" data-target="8.8.8.8">Google</button>
+            <form id="net-custom" class="inline-form"><input id="net-custom-host" placeholder="oyun sunucusu IP" spellcheck="false"></form>
+          </span>
+        </div>
+      </div>
+
+      <h2 class="section-title">Hız testi <span>Cloudflare sunucularıyla, birkaç paralel bağlantıyla yaklaşık 20 saniye sürer.</span></h2>
+      <div class="card speed">
+        <div class="speed-grid">
+          <div class="speed-cell"><div class="stat-label">İndirme</div><div class="speed-val" id="sp-down">–</div><div class="muted">Mbps</div></div>
+          <div class="speed-cell"><div class="stat-label">Yükleme</div><div class="speed-val" id="sp-up">–</div><div class="muted">Mbps</div></div>
+          <div class="speed-cell"><div class="stat-label">Ping (boşta)</div><div class="speed-val" id="sp-idle">–</div><div class="muted">ms</div></div>
+          <div class="speed-cell"><div class="stat-label">Ping (yük altında)</div><div class="speed-val" id="sp-loaded">–</div><div class="muted">ms</div></div>
+          <div class="speed-cell grade-cell"><div class="stat-label">Oyun notu</div><div class="grade" id="sp-grade">–</div><div class="muted" id="sp-grade-sub">bufferbloat</div></div>
+        </div>
+        <div class="bar speed-bar"><span id="sp-progress"></span></div>
+        <div class="speed-foot">
+          <span class="muted" id="sp-phase">Hat doluyken ping'in ne kadar arttığı, oyunlarda indirme hızından daha önemlidir.</span>
+          <button class="btn" id="sp-start">Testi başlat</button>
+        </div>
+      </div>
+
+      <h2 class="section-title">Uygulamaların internet kullanımı</h2>
+      <div class="card traffic">
+        <div class="traffic-head">
+          <div class="muted">Windows bu bilgiyi yalnızca yönetici iznine sahip programlara verir. İzleme sadece bu sayfa açıkken çalışır, sayfadan çıkınca durur.</div>
+          <button class="btn" id="tr-toggle">İzlemeyi başlat</button>
+        </div>
+        <div class="traffic-list" id="tr-list"></div>
       </div>
     </section>
 

@@ -8,7 +8,7 @@ PC'yi açar açmaz açılan, interneti ve bilgisayarı en iyi şekilde kullandı
 | **Akıllı DNS**: sağlayıcı hız ölçümü, DNS engeli teşhisi, Hızlı DNS ya da şifreli DNS (DoH) | ✅ v0.2 |
 | **Gizli Tarayıcı**: iz bırakmayan, reklam engelleyicili sekmeli tarayıcı | ✅ v0.3 |
 | **Oyun Modu**: arka plan uygulamalarını dondurur, güç planı, öncelik | ✅ v0.4 |
-| **İnternet**: canlı ping/jitter, hız testi, uygulama başına trafik | yakında |
+| **İnternet**: canlı ping/jitter, hız testi, uygulama başına trafik | ✅ v0.5 |
 
 ## Derleme
 
@@ -70,6 +70,14 @@ Bu bağlantıda (Türk Telekom, 2026-10-26) ölçülenler: operatör engelli adl
 - Çökme güvenliği: oturum, bir şeye dokunulmadan önce `%LOCALAPPDATA%\Gecit\gamemode-session.json` dosyasına yazılır. Geçit çökerse bir sonraki açılışta dondurulanlar çözülür ve güç planı geri alınır (testte doğrulandı).
 - Oyunun kendisine bir şey enjekte edilmez, yalnızca öncelik değiştirilir. Hile koruması buna izin vermezse not olarak gösterilir.
 - Canlı panel: RAM, CPU (`GetSystemTimes`), GPU kullanımı, VRAM ve sıcaklık (`nvidia-smi`). Oturum raporunda boşalan RAM ve en yüksek GPU sıcaklığı yer alır.
+
+### İnternet
+
+- Canlı bağlantı: internet hedefi (Cloudflare, Google ya da kullanıcının yazdığı oyun sunucusu) ve varsayılan ağ geçidi (modem) saniyede bir ICMP ile pinglenir. Son 120 saniye grafiğe çizilir. Ortalama, dalgalanma (art arda ölçümlerin farkı) ve kayıp hesaplanır. Teşhis şöyle yapılır: modem pingi kötüyse sorun ev ağında (Wi-Fi/kablo), modem iyi ama internet kötüyse sorun operatörde. Döngü yalnızca sayfa açıkken çalışır ve 6 saniye boyunca istek gelmezse kendiliğinden durur.
+- Hız testi: `speed.cloudflare.com` üzerinden 6 paralel indirme ve 4 paralel yükleme, her biri 8 saniye. İlk 1,5 saniye TCP yavaş başlangıcı olduğu için ölçüme katılmaz. Test sırasında 1.1.1.1 pinglenir ve gecikme artışına göre bufferbloat notu verilir (A+ <5 ms, A <30, B <60, C <200, D <400, F). Cloudflare 50 MB'tan büyük indirme isteklerine 403 döndürür.
+- Uygulama başına trafik: Windows çekirdek ETW oturumunu yalnızca yöneticiye açar. Bu yüzden `Gecit.exe --elevated netmon <pipe> <uiPid>` yardımcı süreci (TraceEvent, `NetworkTCPIP | Process`) saniyede bir PID başına baytları adlandırılmış kanala yazar. Arayüz kanalı kapatınca ya da kendisi kapanınca yardımcı da çıkar (testte doğrulandı). Süreç adları paketin ilk görüldüğü anda alınır, ölmüş süreçler için ProcessStart/DCStart olaylarındaki dosya adı kullanılır.
+
+Bu bağlantıda ölçülenler (2026-10-26, Ethernet): Cloudflare'e 53 ms, modeme ~1 ms, 620 Mbps indirme, 47,8 Mbps yükleme, yük altında +5 ms → not A.
 
 ## Üçüncü taraf dosyalar
 

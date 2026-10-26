@@ -31,6 +31,9 @@ sealed partial class MainForm : Form
     readonly EventWaitHandle browserEvent = new(false, EventResetMode.AutoReset, Program.BrowserEventName);
     readonly AdBlocker adBlocker = new();
     readonly GameModeService game;
+    readonly PingMonitor ping = new();
+    readonly TrafficMonitor traffic = new();
+    CancellationTokenSource? speedCts;
     BrowserForm? browser;
     int gpuSampleCountdown;
 
@@ -159,6 +162,8 @@ sealed partial class MainForm : Form
     void ExitApp()
     {
         game.Stop();   // never leave apps frozen behind us
+        traffic.Stop();
+        speedCts?.Cancel();
         exiting = true;
         Close();
     }
@@ -518,6 +523,33 @@ sealed partial class MainForm : Form
                 return null;
             case var c when c.StartsWith("game.", StringComparison.Ordinal):
                 return await HandleGameAsync(cmd, args);
+            case "net.ping":
+                ping.KeepAlive();
+                var (inet, gw) = ping.Snapshot();
+                return new { internet = inet, gateway = gw };
+            case "net.target":
+                ping.SetTarget(args!["target"]!.GetValue<string>());
+                return null;
+            case "net.speed":
+                speedCts?.Cancel();
+                speedCts = new CancellationTokenSource();
+                try
+                {
+                    return await SpeedTest.RunAsync(
+                        p => BeginInvoke(() => Post(new { @event = "speed", data = p })), speedCts.Token);
+                }
+                catch (OperationCanceledException) { return null; }
+            case "net.speed.stop":
+                speedCts?.Cancel();
+                return null;
+            case "net.traffic.start":
+                await traffic.StartAsync();
+                return new { running = traffic.Running };
+            case "net.traffic.stop":
+                traffic.Stop();
+                return new { running = false };
+            case "net.traffic":
+                return new { running = traffic.Running, since = traffic.Since, apps = traffic.Snapshot() };
             case "app.autostart":
                 Autostart.Set(args!["on"]!.GetValue<bool>());
                 return BuildState();
