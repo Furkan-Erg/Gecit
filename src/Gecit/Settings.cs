@@ -12,6 +12,8 @@ sealed class Settings
     public bool BrowserAdBlock { get; set; } = true;
     public string BrowserSearch { get; set; } = "duckduckgo";
 
+    public GameModeSettings Game { get; set; } = new();
+
     static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
     public static Settings Load()
@@ -26,4 +28,16 @@ sealed class Settings
     }
 
     public void Save() => File.WriteAllText(AppPaths.SettingsFile, JsonSerializer.Serialize(this, Json));
+}
+
+sealed class GameModeSettings
+{
+    public bool AutoDetect { get; set; } = true;          // start when a known/installed/added game runs
+    public bool DetectFullscreen { get; set; } = true;    // ...or any Direct3D exclusive-fullscreen app
+    public bool PowerPlan { get; set; } = true;
+    public bool HighPriority { get; set; } = true;
+    public bool RelaunchClosed { get; set; } = true;
+    public List<string> CustomGames { get; set; } = [];
+    // Process name -> "suspend" | "close"
+    public Dictionary<string, string> Targets { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }

@@ -82,6 +82,7 @@ function render(s) {
   renderPresets(s, busy);
   renderDns(s);
   renderBrowser(s.browser);
+  renderGame(s.game);
   $("autostart").checked = s.autostart;
   $("uninstall").disabled = s.busy;
   $("version").textContent = "v" + s.version;
@@ -292,6 +293,167 @@ $("browser-open").addEventListener("click", () => call("browser.open"));
 $("browser-adblock").addEventListener("change", (e) => call("browser.settings", { adblock: e.target.checked }).then(render));
 $("browser-shortcut").addEventListener("click", () =>
   call("browser.shortcut").then(() => toast("Masaüstüne \"Gizli Tarayıcı\" kısayolu eklendi.", "ok"), (e) => toast(e.message, "error")));
+
+// ---- Oyun Modu ----
+const gb = (bytes) => (bytes / 1024 ** 3).toFixed(1);
+let apps = null;   // running app candidates
+
+function minutesSince(iso) {
+  return Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+}
+
+function renderGame(g) {
+  const a = g.active;
+  $("game-hero").dataset.state = a ? "active" : "idle";
+  $("game-status").textContent = a ? (a.manual ? "Açık" : a.name) : "Beklemede";
+  $("game-detail").textContent = a
+    ? `${minutesSince(a.started)} dakikadır açık. Oyun kapanınca (ya da düğmeye basınca) her şey eski haline döner.`
+    : g.settings.autoDetect
+      ? "Bir oyun açıldığında kendiliğinden başlar. Şimdi açmak için düğmeye bas."
+      : "Otomatik algılama kapalı. Açmak için düğmeye bas.";
+  const meta = $("game-meta");
+  meta.replaceChildren();
+  const tag = (text, cls = "tag") => { const t = document.createElement("span"); t.className = cls; t.textContent = text; meta.append(t); };
+  if (a) {
+    if (a.frozen) tag(`${a.frozen} uygulama donduruldu`, "tag pink");
+    if (a.closed) tag(`${a.closed} uygulama kapatıldı`, "tag pink");
+    if (a.freedBytes > 0) tag(`${gb(a.freedBytes)} GB RAM boşaldı`);
+    a.notes.forEach((n) => tag(n, "tag ghost"));
+  } else {
+    const n = Object.keys(g.targets).length;
+    tag(n ? `${n} uygulama dondurulacak/kapatılacak` : "Dondurulacak uygulama seçilmedi", n ? "tag" : "tag ghost");
+  }
+
+  const last = $("game-last");
+  last.hidden = !g.last || !!a;
+  if (g.last) {
+    const r = g.last;
+    last.innerHTML = `<span class="ls-title">Son oturum</span>`;
+    const item = (label, value) => {
+      const s = document.createElement("span");
+      s.className = "ls-item";
+      s.append(label + " ");
+      const b = document.createElement("b");
+      b.textContent = value;
+      s.append(b);
+      last.append(s);
+    };
+    item("Oyun", r.name);
+    item("Süre", r.minutes + " dk");
+    if (r.freedBytes > 0) item("Boşalan RAM", gb(r.freedBytes) + " GB");
+    if (r.peakGpuTemp > 0) item("En yüksek GPU", r.peakGpuTemp + " °C");
+    item("Durdurulan", String(r.frozen + r.closed));
+  }
+
+  document.querySelectorAll("[data-game-setting]").forEach((el) => { el.checked = g.settings[el.dataset.gameSetting]; });
+  $("game-known").textContent = `Hazır listede ${g.knownCount} popüler oyun var (CS2, VALORANT, LoL, Roblox, Metin2…). Steam ve Epic kütüphanen de otomatik taranır.`;
+
+  $("game-list").replaceChildren(...(g.games.length ? g.games.map((x) => {
+    const chip = document.createElement("span");
+    chip.className = "game-chip";
+    chip.textContent = x.name + " ";
+    const src = document.createElement("small");
+    src.textContent = { steam: "Steam", epic: "Epic", custom: "eklendi" }[x.source] ?? x.source;
+    chip.append(src);
+    if (x.source === "custom") {
+      const del = document.createElement("button");
+      del.title = "Listeden çıkar";
+      del.textContent = "×";
+      del.addEventListener("click", () => call("game.removeGame", { exe: x.exes[0] }).then(render));
+      chip.append(del);
+    }
+    return chip;
+  }) : [Object.assign(document.createElement("div"), { className: "empty", textContent: "Steam/Epic'te kurulu oyun bulunamadı. Hazır listedeki oyunlar yine de algılanır." })]));
+
+  if (apps) renderApps(g.targets);
+}
+
+function renderApps(targets) {
+  const box = $("game-apps");
+  // Targets that aren't running right now still get a row so they can be removed.
+  const rows = [...apps];
+  for (const name of Object.keys(targets))
+    if (!rows.some((r) => r.process.toLowerCase() === name.toLowerCase())) rows.push({ process: name, name, memoryMb: null, count: 0 });
+  if (!rows.length) {
+    box.innerHTML = '<div class="empty">Dondurulabilecek açık uygulama yok.</div>';
+    return;
+  }
+  box.replaceChildren(...rows.map((r) => {
+    const current = Object.entries(targets).find(([k]) => k.toLowerCase() === r.process.toLowerCase())?.[1] ?? "none";
+    const row = document.createElement("div");
+    row.className = "app-row";
+    row.innerHTML = `<div class="app-name"><span class="n"></span><small></small></div><div class="app-mem"></div>
+      <div class="seg"><button data-a="none">Dokunma</button><button data-a="suspend">Dondur</button><button data-a="close" class="close">Kapat</button></div>`;
+    row.querySelector(".n").textContent = r.name;
+    row.querySelector("small").textContent = r.process + (r.count > 1 ? ` · ${r.count} işlem` : "") + (r.count === 0 ? " · şu an kapalı" : "");
+    row.querySelector(".app-mem").textContent = r.memoryMb == null ? "" : r.memoryMb >= 1024 ? (r.memoryMb / 1024).toFixed(1) + " GB" : r.memoryMb + " MB";
+    row.querySelectorAll(".seg button").forEach((b) => {
+      b.classList.toggle("on", b.dataset.a === current);
+      b.addEventListener("click", () => call("game.target", { process: r.process, action: b.dataset.a }).then(render, (e) => toast(e.message, "error")));
+    });
+    return row;
+  }));
+}
+
+async function loadApps() {
+  try {
+    apps = await call("game.apps");
+    renderApps(state.game.targets);
+  } catch (e) {
+    toast(e.message, "error");
+  }
+}
+
+function setBar(id, percent, hot = false) {
+  const el = $(id);
+  el.style.width = Math.min(100, Math.max(0, percent)) + "%";
+  el.classList.toggle("hot", hot);
+}
+
+async function refreshStats() {
+  try {
+    const s = await call("game.stats");
+    const usedPct = 100 * (1 - s.ramAvailable / s.ramTotal);
+    $("st-ram").innerHTML = `${gb(s.ramAvailable)} <small>/ ${gb(s.ramTotal)} GB</small>`;
+    setBar("st-ram-bar", usedPct, usedPct > 85);
+    $("st-cpu").textContent = s.cpu + "%";
+    setBar("st-cpu-bar", s.cpu, s.cpu > 90);
+    if (s.gpu) {
+      $("st-gpu").innerHTML = `${s.gpu.utilPercent}% <small>${(s.gpu.memUsedMb / 1024).toFixed(1)}/${(s.gpu.memTotalMb / 1024).toFixed(0)} GB</small>`;
+      setBar("st-gpu-bar", s.gpu.utilPercent);
+      $("st-temp").textContent = s.gpu.tempC + " °C";
+      setBar("st-temp-bar", (s.gpu.tempC - 25) * 100 / 65, s.gpu.tempC >= 80);
+    } else {
+      $("st-gpu").textContent = "—";
+      $("st-temp").textContent = "—";
+    }
+  } catch { /* the page may be switching; next tick retries */ }
+}
+
+let statsTimer = null;
+function onGamePage(visible) {
+  clearInterval(statsTimer);
+  statsTimer = null;
+  if (!visible) return;
+  refreshStats();
+  statsTimer = setInterval(refreshStats, 2000);
+  if (!apps) loadApps();
+}
+
+document.querySelectorAll(".nav-item").forEach((btn) =>
+  btn.addEventListener("click", () => onGamePage(btn.dataset.page === "game")));
+
+$("game-power").addEventListener("click", () =>
+  call("game.toggle", { on: !state.game.active }).then(render, (e) => toast(e.message, "error")));
+$("game-apps-refresh").addEventListener("click", loadApps);
+document.querySelectorAll("[data-game-setting]").forEach((el) =>
+  el.addEventListener("change", () => call("game.settings", { [el.dataset.gameSetting]: el.checked }).then(render)));
+$("add-game").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const exe = $("add-game-exe").value.trim();
+  if (!exe) return;
+  call("game.addGame", { exe }).then((s) => { $("add-game-exe").value = ""; render(s); toast(exe + " oyun listesine eklendi.", "ok"); });
+});
 
 // Measure once, the first time the DNS page is opened.
 let dnsVisited = false;

@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Gecit.Browser;
 using Gecit.Dns;
 using Gecit.Dpi;
+using Gecit.Game;
 using Gecit.Net;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
@@ -29,7 +30,9 @@ sealed partial class MainForm : Form
     readonly EventWaitHandle showEvent = new(false, EventResetMode.AutoReset, Program.ShowEventName);
     readonly EventWaitHandle browserEvent = new(false, EventResetMode.AutoReset, Program.BrowserEventName);
     readonly AdBlocker adBlocker = new();
+    readonly GameModeService game;
     BrowserForm? browser;
+    int gpuSampleCountdown;
 
     bool allowShow;
     bool exiting;
@@ -53,8 +56,15 @@ sealed partial class MainForm : Form
         status = dpi.GetStatus();
         dns = DnsService.GetStatus();
         dnsKey = DnsKey(dns);
+        game = new GameModeService(settings.Game);
+        game.Changed += OnGameModeChanged;
         BuildTray();
-        poll.Tick += (_, _) => RefreshStatus();
+        poll.Tick += (_, _) =>
+        {
+            RefreshStatus();
+            game.Tick();
+            SampleGpuDuringGame();
+        };
         poll.Start();
 
         ThreadPool.RegisterWaitForSingleObject(showEvent, (_, _) => BeginInvoke(ShowFromTray), null, -1, false);
@@ -148,8 +158,144 @@ sealed partial class MainForm : Form
 
     void ExitApp()
     {
+        game.Stop();   // never leave apps frozen behind us
         exiting = true;
         Close();
+    }
+
+    // ---- Oyun Modu ----
+
+    GameSession? lastAnnounced;
+
+    void OnGameModeChanged()
+    {
+        PushState();
+        var s = game.Active;
+        if (s is not null && s != lastAnnounced)
+        {
+            lastAnnounced = s;
+            string what = s.Frozen.Count + s.Closed.Count > 0
+                ? $"{s.Frozen.Select(f => f.Name).Distinct().Count() + s.Closed.Count} uygulama durduruldu."
+                : "Güç planı ve öncelik ayarlandı.";
+            tray.ShowBalloonTip(4000, $"Oyun modu açık · {s.GameName}", what, ToolTipIcon.Info);
+        }
+        else if (s is null && lastAnnounced is not null)
+        {
+            lastAnnounced = null;
+            if (game.LastReport is { } r)
+                tray.ShowBalloonTip(4000, "Oyun modu kapandı", $"{r.GameName}: {FormatDuration(r.Duration)}. Her şey eski haline döndü.", ToolTipIcon.Info);
+        }
+    }
+
+    static string FormatDuration(TimeSpan t) => t.TotalHours >= 1 ? $"{(int)t.TotalHours} sa {t.Minutes} dk" : $"{Math.Max(1, t.Minutes)} dk";
+
+    // Peak GPU temperature for the session report (every ~10 s while a game runs).
+    async void SampleGpuDuringGame()
+    {
+        if (game.Active is null || --gpuSampleCountdown > 0)
+            return;
+        gpuSampleCountdown = 5;
+        if (await GpuStats.SampleAsync() is { } g)
+            game.NoteGpuTemp(g.TempC);
+    }
+
+    async Task<object> GameStatsAsync()
+    {
+        var (total, avail) = NativeProcess.Memory();
+        var gpu = await GpuStats.SampleAsync();
+        if (gpu is not null)
+            game.NoteGpuTemp(gpu.TempC);
+        return new { cpu = NativeProcess.CpuPercent(), ramTotal = total, ramAvailable = avail, gpu };
+    }
+
+    object GameState()
+    {
+        var gs = settings.Game;
+        var s = game.Active;
+        return new
+        {
+            active = s is null ? null : new
+            {
+                name = s.GameName,
+                s.Manual,
+                started = s.Started,
+                frozen = s.Frozen.Select(f => f.Name).Distinct().Count(),
+                closed = s.Closed.Count,
+                freedBytes = s.FreedBytes,
+                notes = s.Notes,
+            },
+            last = game.LastReport is { } r ? new
+            {
+                name = r.GameName,
+                minutes = (int)Math.Ceiling(r.Duration.TotalMinutes),
+                freedBytes = r.FreedBytes,
+                peakGpuTemp = r.PeakGpuTemp,
+                r.Frozen,
+                r.Closed,
+                r.Notes,
+                ended = r.Ended,
+            } : null,
+            settings = new { gs.AutoDetect, gs.DetectFullscreen, gs.PowerPlan, gs.HighPriority, gs.RelaunchClosed },
+            targets = gs.Targets,
+            knownCount = game.Games.Count(g => g.Source == "known"),
+            games = game.Games.Where(g => g.Source != "known")
+                .GroupBy(g => g.Name).Select(g => new { name = g.Key, exes = g.Select(x => x.Exe), source = g.First().Source }),
+        };
+    }
+
+    async Task<object?> HandleGameAsync(string cmd, JsonNode? args)
+    {
+        var gs = settings.Game;
+        switch (cmd)
+        {
+            case "game.toggle":
+                if (args!["on"]!.GetValue<bool>()) { if (game.Active is null) game.StartManual(); }
+                else game.Stop();
+                return BuildState();
+            case "game.settings":
+                foreach (var (key, value) in args!.AsObject())
+                {
+                    bool on = value!.GetValue<bool>();
+                    switch (key)
+                    {
+                        case "autoDetect": gs.AutoDetect = on; break;
+                        case "detectFullscreen": gs.DetectFullscreen = on; break;
+                        case "powerPlan": gs.PowerPlan = on; break;
+                        case "highPriority": gs.HighPriority = on; break;
+                        case "relaunchClosed": gs.RelaunchClosed = on; break;
+                    }
+                }
+                settings.Save();
+                return BuildState();
+            case "game.target":
+                string process = args!["process"]!.GetValue<string>();
+                string action = args["action"]!.GetValue<string>();
+                if (action is "suspend" or "close" && !GameCatalog.IsProtected(process))
+                    gs.Targets[process] = action;
+                else
+                    gs.Targets.Remove(process);
+                settings.Save();
+                return BuildState();
+            case "game.addGame":
+                string exe = Path.GetFileNameWithoutExtension(args!["exe"]!.GetValue<string>().Trim()).ToLowerInvariant();
+                if (exe.Length > 0 && !GameCatalog.IsProtected(exe) && !gs.CustomGames.Contains(exe))
+                    gs.CustomGames.Add(exe);
+                gs.Targets.Remove(exe);
+                settings.Save();
+                game.RefreshGames();
+                return BuildState();
+            case "game.removeGame":
+                gs.CustomGames.Remove(args!["exe"]!.GetValue<string>());
+                settings.Save();
+                game.RefreshGames();
+                return BuildState();
+            case "game.apps":
+                return await Task.Run(() => GameCatalog.RunningApps(game.GameExes));
+            case "game.stats":
+                return await GameStatsAsync();
+            default:
+                throw new InvalidOperationException($"Bilinmeyen komut: {cmd}");
+        }
     }
 
     // ---- DPI ----
@@ -370,6 +516,8 @@ sealed partial class MainForm : Form
             case "browser.shortcut":
                 CreateBrowserShortcut();
                 return null;
+            case var c when c.StartsWith("game.", StringComparison.Ordinal):
+                return await HandleGameAsync(cmd, args);
             case "app.autostart":
                 Autostart.Set(args!["on"]!.GetValue<bool>());
                 return BuildState();
@@ -414,6 +562,7 @@ sealed partial class MainForm : Form
             listCount = adBlocker.Count,
             listDate = adBlocker.ListDate,
         },
+        game = GameState(),
     };
 
     void PushState() => Post(new { @event = "state", data = BuildState() });

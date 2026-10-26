@@ -7,7 +7,7 @@ PC'yi açar açmaz açılan, interneti ve bilgisayarı en iyi şekilde kullandı
 | **Engel Aşma**: GoodbyeDPI-Turkey ile DPI + DNS engellerini VPN'siz aşar | ✅ v0.1 |
 | **Akıllı DNS**: sağlayıcı hız ölçümü, DNS engeli teşhisi, Hızlı DNS ya da şifreli DNS (DoH) | ✅ v0.2 |
 | **Gizli Tarayıcı**: iz bırakmayan, reklam engelleyicili sekmeli tarayıcı | ✅ v0.3 |
-| **Oyun Modu**: arka plan uygulamalarını dondurur, güç planı, öncelik | yakında |
+| **Oyun Modu**: arka plan uygulamalarını dondurur, güç planı, öncelik | ✅ v0.4 |
 | **İnternet**: canlı ping/jitter, hız testi, uygulama başına trafik | yakında |
 
 ## Derleme
@@ -58,6 +58,18 @@ Bu bağlantıda (Türk Telekom, 2026-10-26) ölçülenler: operatör engelli adl
 - Açılır pencereler gerçek sekme olarak verilir (`NewWindow`), böylece "Google ile giriş yap" gibi `window.opener` akışları çalışır.
 - Araç çubuğu sayfası C#'a komut gönderebildiği için, sayfalardan gelen veriler (başlık vb.) oraya yalnızca `textContent` ile yazılır.
 - `Gecit.exe --browser` doğrudan tarayıcıyı açar (masaüstü kısayolu bunu kullanır). Uygulama zaten açıksa ona sinyal gönderilir.
+
+### Oyun Modu
+
+- Algılama (2 saniyede bir): hazır liste (`GameCatalog.Known`, Türkiye'de popüler Metin2/Knight Online/Zula dahil), Steam kütüphaneleri (`libraryfolders.vdf` + `appmanifest_*.acf`), Epic manifestleri, kullanıcının eklediği .exe'ler ve isteğe bağlı olarak `SHQueryUserNotificationState == QUNS_RUNNING_D3D_FULL_SCREEN`.
+- Oyun başlayınca:
+  - Yüksek performans güç planına geçilir (`powercfg`, yönetici gerekmez).
+  - Oyuna yüksek öncelik verilir.
+  - Seçilen uygulamalar ya **dondurulur** (`NtSuspendProcess` + `EmptyWorkingSet`: işlemci sıfırlanır, RAM sayfa dosyasına gider, kaldığı yerden devam eder) ya da **kapatılır** (`CloseMainWindow`, hiçbir şey zorla öldürülmez; oyun bitince yeniden açılır).
+- Oyun işlemi kapanınca hepsi geri alınır. Kullanıcı oyun sırasında güç planını kendisi değiştirdiyse ona dokunulmaz. Çözme işlemi PID ile birlikte başlangıç zamanını da kontrol eder, böylece aynı PID'yi alan başka bir işleme dokunulmaz.
+- Çökme güvenliği: oturum, bir şeye dokunulmadan önce `%LOCALAPPDATA%\Gecit\gamemode-session.json` dosyasına yazılır. Geçit çökerse bir sonraki açılışta dondurulanlar çözülür ve güç planı geri alınır (testte doğrulandı).
+- Oyunun kendisine bir şey enjekte edilmez, yalnızca öncelik değiştirilir. Hile koruması buna izin vermezse not olarak gösterilir.
+- Canlı panel: RAM, CPU (`GetSystemTimes`), GPU kullanımı, VRAM ve sıcaklık (`nvidia-smi`). Oturum raporunda boşalan RAM ve en yüksek GPU sıcaklığı yer alır.
 
 ## Üçüncü taraf dosyalar
 

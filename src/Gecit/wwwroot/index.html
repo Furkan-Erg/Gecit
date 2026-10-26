@@ -39,7 +39,7 @@
       </button>
       <button class="nav-item" data-page="game">
         <svg viewBox="0 0 24 24"><path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 15h-4l-1 .6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16.5" cy="12" r=".8"/><circle cx="18" cy="13.6" r=".8"/></svg>
-        Oyun Modu <span class="soon">yakında</span>
+        Oyun Modu
       </button>
       <button class="nav-item" data-page="net">
         <svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 4-6 5 5"/><path d="M3 21h18"/></svg>
@@ -197,16 +197,59 @@
       </div>
     </section>
     <section class="page" id="page-game">
-      <header class="page-head"><h1>Oyun Modu</h1><p>Oyuna RAM ve işlemci bırakır, takılmaları azaltır.</p></header>
-      <div class="card soon-card">
-        <div class="soon-badge">Yakında</div>
-        <ul class="plan">
-          <li>Oyun açılınca seçtiğin arka plan uygulamalarını kapatır veya dondurur</li>
-          <li>Yüksek performans güç planı ve oyuna yüksek öncelik</li>
-          <li>Oyun sırasında Windows Update indirmelerini durdurur</li>
-          <li>Oyun kapanınca her şeyi eski haline getirir</li>
-        </ul>
+      <header class="page-head">
+        <h1>Oyun Modu</h1>
+        <p>Oyun açılınca seçtiğin uygulamaları dondurur ve RAM'lerini oyuna bırakır, güç planını ve önceliği ayarlar. Oyun kapanınca her şey eski haline döner.</p>
+      </header>
+
+      <div class="hero game-hero" id="game-hero" data-state="idle">
+        <button class="power" id="game-power" aria-label="Oyun modunu aç/kapat">
+          <span class="power-ring"></span>
+          <svg viewBox="0 0 24 24"><path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 15h-4l-1 .6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3"/></svg>
+        </button>
+        <div class="hero-text">
+          <div class="hero-label">Oyun modu</div>
+          <div class="hero-status" id="game-status">Beklemede</div>
+          <div class="hero-detail" id="game-detail"></div>
+          <div class="hero-meta" id="game-meta"></div>
+        </div>
       </div>
+
+      <div class="stats" id="game-stats">
+        <div class="stat"><div class="stat-label">Boş RAM</div><div class="stat-value" id="st-ram">…</div><div class="bar"><span id="st-ram-bar"></span></div></div>
+        <div class="stat"><div class="stat-label">İşlemci</div><div class="stat-value" id="st-cpu">…</div><div class="bar"><span id="st-cpu-bar"></span></div></div>
+        <div class="stat"><div class="stat-label">Ekran kartı</div><div class="stat-value" id="st-gpu">…</div><div class="bar"><span id="st-gpu-bar"></span></div></div>
+        <div class="stat"><div class="stat-label">GPU sıcaklığı</div><div class="stat-value" id="st-temp">…</div><div class="bar"><span id="st-temp-bar"></span></div></div>
+      </div>
+
+      <div class="card last-session" id="game-last" hidden></div>
+
+      <h2 class="section-title">Oyun sırasında dondurulacak uygulamalar
+        <span>Dondurulan uygulama durur ve RAM'i boşalır; oyun bitince kaldığı yerden devam eder.</span>
+        <button class="btn small" id="game-apps-refresh">Yenile</button>
+      </h2>
+      <div class="card apps" id="game-apps"><div class="empty">Yükleniyor…</div></div>
+
+      <h2 class="section-title">Ayarlar</h2>
+      <div class="card rows">
+        <label class="row"><div><div class="row-title">Oyunları otomatik algıla</div><div class="row-sub" id="game-detect-sub">Bilinen oyunlar, Steam/Epic kütüphanen ve eklediklerin açılınca oyun modu kendiliğinden başlar.</div></div><input type="checkbox" class="switch" data-game-setting="autoDetect"></label>
+        <label class="row"><div><div class="row-title">Tam ekran oyunları da algıla</div><div class="row-sub">Windows'un "tam ekran Direct3D uygulaması çalışıyor" bilgisini kullanır; listede olmayan oyunları da yakalar.</div></div><input type="checkbox" class="switch" data-game-setting="detectFullscreen"></label>
+        <label class="row"><div><div class="row-title">Yüksek performans güç planı</div><div class="row-sub">Oyun süresince işlemci düşük hıza inmez. Oyun bitince önceki plana döner.</div></div><input type="checkbox" class="switch" data-game-setting="powerPlan"></label>
+        <label class="row"><div><div class="row-title">Oyuna yüksek öncelik</div><div class="row-sub">İşlemci sıkıştığında oyun öne alınır. Hile korumalı bazı oyunlar buna izin vermez.</div></div><input type="checkbox" class="switch" data-game-setting="highPriority"></label>
+        <label class="row"><div><div class="row-title">Kapatılan uygulamaları geri aç</div><div class="row-sub">"Kapat" seçtiğin uygulamalar oyun bitince yeniden açılır.</div></div><input type="checkbox" class="switch" data-game-setting="relaunchClosed"></label>
+      </div>
+
+      <h2 class="section-title">Oyunlarım <span id="game-known"></span></h2>
+      <div class="card">
+        <div class="game-list" id="game-list"></div>
+        <form class="add-game" id="add-game" autocomplete="off">
+          <input id="add-game-exe" spellcheck="false" placeholder="Listede olmayan oyunun .exe adı (örn. hl2.exe)">
+          <button class="btn small" type="submit">Ekle</button>
+        </form>
+      </div>
+
+      <p class="footnote">Oyun modu FPS'i sihirle artırmaz: arka plandaki programların kullandığı RAM'i ve işlemciyi oyuna bırakır.
+        8 GB RAM'de bu, takılmaları ve ani FPS düşüşlerini azaltır. Oyunun kendisine hiçbir şey enjekte edilmez; hile korumalarıyla sorun çıkmaz.</p>
     </section>
     <section class="page" id="page-net">
       <header class="page-head"><h1>İnternet</h1><p>Bağlantının gerçek durumunu gösterir.</p></header>
