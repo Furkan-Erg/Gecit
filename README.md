@@ -9,6 +9,9 @@ PC'yi açar açmaz açılan, interneti ve bilgisayarı en iyi şekilde kullandı
 | **Gizli Tarayıcı**: iz bırakmayan, reklam engelleyicili sekmeli tarayıcı | ✅ v0.3 |
 | **Oyun Modu**: arka plan uygulamalarını dondurur, güç planı, öncelik | ✅ v0.4 |
 | **İnternet**: canlı ping/jitter, hız testi, uygulama başına trafik | ✅ v0.5 |
+| **Ağım**: modeme bağlı cihazlar (üretici, model, ad), yeni cihaz bildirimi | ✅ v0.6 |
+| **Açılış**: başlangıç programları ve açılışa etkileri, açılış süresi ölçümü | ✅ v0.6 |
+| **Güncelleme**: GitHub'dan yeni sürüm denetimi, uygulama içinden tek tıkla kurulum | ✅ v0.6 |
 
 ## İndir
 
@@ -102,6 +105,36 @@ Bu bağlantıda (Türk Telekom, 2026-10-26) ölçülenler: operatör engelli adl
 
 Bu bağlantıda ölçülenler (2026-10-26, Ethernet): Cloudflare'e 53 ms, modeme ~1 ms, 620 Mbps indirme, 47,8 Mbps yükleme, yük altında +5 ms → not A.
 
+### Ağım
+
+- Yönetici izni gerekmez. `LanScanner` kendi /24 ağındaki 254 adrese iki tur ping atar. Ping'e cevap vermeyen cihazlar da Windows'un ARP sorusuna cevap verdiği için ARP tablosuna (`GetIpNetTable`) düşer. IP ve MAC buradan gelir.
+- Adlar şu sırayla aranır, hepsi paralel çalışır:
+  - Cihazın kendi arayüzü: Samsung TV `:8001/api/v2/`, Chromecast/Google TV `:8008/setup/eureka_info`, Roku `:8060/query/device-info`. Hepsi yalnızca okuma yapar ve eşleştirme istemez.
+  - UPnP/SSDP açıklaması: `friendlyName`, üretici ve model. Modemlerin genel "Internet Home Gateway Device" adı atlanır, modem hep "Modem" diye görünür.
+  - Cihazın kendisine mDNS PTR sorgusu (5353), NetBIOS düğüm durumu ve modemin DNS'inde PTR kaydı.
+- Üretici, MAC'in ilk yarısından (OUI) bulunur. Veri gömülü `Assets/oui.txt.gz` dosyasından gelir (58 bin kayıt, 540 KB). `tools/build-oui.ps1` bu dosyayı Wireshark'ın IEEE kayıt kopyasından yeniden üretir. Telefonların "gizli MAC" adreslerinde (yerel yönetilen bit) üretici yoktur; bunlar telefon/tablet olarak tahmin edilir.
+- Görülen cihazlar ağ başına `%APPDATA%\Gecit\devices.json` dosyasında saklanır. Ağ, modemin MAC adresiyle ayırt edilir, böylece başka bir ağa geçen dizüstü yanlış "yeni cihaz" uyarısı vermez. İlk tarama temel kabul edilir. Sonra ortaya çıkan cihazlar bir gün boyunca "yeni" etiketi taşır ve arka plan denetiminde (10 dakikada bir, oyun sırasında yapılmaz) bildirim gösterilir.
+- Bu ağda (2026-10-26): modem Nokia (Taicang T&W üretimi), 7 cihaz. Samsung TV, açıkken kendi API'sinden "Samsung 7 Series (43)" adıyla tanındı. Modem, mDNS çoklu yayınını Wi-Fi ile kablo arasında taşımıyor; telefonların adı bu yüzden çıkmıyor.
+
+### Açılış
+
+- Liste, Görev Yöneticisi'nin Başlangıç sekmesiyle aynıdır: HKCU/HKLM `Run`, `WOW6432Node\Run` ve iki Başlangıç klasörü. Açma/kapama, Görev Yöneticisi'nin kullandığı `Explorer\StartupApproved` değerini yazar: 12 bayt, ilk bayt `02` açık, `03` kapalı (ardından kapatma zamanı). Hiçbir kayıt silinmez.
+- Tüm kullanıcılara ait (HKLM) öğeler `Gecit.exe --elevated startup <kaynak> <ad> on|off` ile değiştirilir. Yardımcı süreç yalnızca gerçekten var olan öğelere yazar ve kullanıcı öğelerini reddeder.
+- Ölçüm (`BootMeter`): Windows'un kendi açılış günlüğü yalnızca yöneticiye açık olduğu için Geçit kendisi ölçer. Başlangıç noktası explorer.exe'nin başlama zamanıdır (masaüstünün göründüğü an). İşlemci %25'in, disk %30'un altına inip 5 saniye öyle kalınca bilgisayar "kullanıma hazır" sayılır. Bu süre en fazla 3 dakikaya kadar ölçülür.
+- Program başına etki, masaüstünden 75 saniye sonra hesaplanır. Öğenin exe'siyle eşleşen ve oturum açıldıktan sonra başlamış süreçlerin, alt süreçleri de dahil olmak üzere, işlemci süresi (`GetProcessTimes`) ve G/Ç baytları (`GetProcessIoCounters`) toplanır. Eşikler Görev Yöneticisi'ninkilerdir: yüksek >1 sn işlemci ya da >3 MB, orta >300 ms ya da >300 KB.
+- Ölçüm, Geçit Windows'la açılıyorsa her açılışta kendiliğinden yapılır. Açılmıyorsa "Bir sonraki açılışta ölç" düğmesi `HKCU\...\RunOnce` altına tek seferlik `Gecit.exe --boot-measure` yazar. Bu komut pencere açmadan ölçer, sonucu bildirimle söyler ve kapanır. Son 12 ölçüm `%LOCALAPPDATA%\Gecit\boot-history.json` dosyasında tutulur. BIOS süresi, Windows'un kaydettiği `FwPOSTTime` değeridir.
+- Geliştirme sürümünde `GECIT_DESKTOP_AGO=<sn>` ortam değişkeni, masaüstü o kadar saniye önce açılmış gibi ölçüm başlatır, böylece yeniden başlatmadan test edilebilir. Doğrulandı: süreç başına işlemci süreleri `Get-Process` ile aynı çıktı.
+
+### Güncelleme
+
+- `Updater` açılıştan 10 saniye sonra (oturum yeni açıldıysa 90 saniye sonra) ve 12 saatte bir `api.github.com/repos/Furkan-Erg/Gecit/releases/latest` adresine bakar. Ayarlar'dan kapatılabilir.
+- Yalnızca adı `Gecit-Setup-*.exe` olan ve GitHub'ın hesapladığı `sha256:` özeti bulunan bir dosya önerilir. Dosya `%LOCALAPPDATA%\Gecit\update` klasörüne iner. Özeti, salt okunur kilitli açık tutulurken kontrol edilir ve kurulum bu kilit altında başlatılır; kontrol ile çalıştırma arasında dosya değiştirilemez.
+- Kurulum `/SILENT /RELAUNCH=show|tray` ile **`runas` olmadan** başlatılır. Inno kendini yükseltir ve normal kullanıcıyı hatırlar, böylece yeniden açılan Geçit yönetici olmaz. `runas` ile başlatılsaydı yeni Geçit yönetici olarak açılırdı; testte görüldü ve düzeltildi. Kurulum, eski Geçit'i `--exit` ile kapatır. Hizmetleri durdurur, dosyaları değiştirir, hizmetleri yeniden başlatır ve uygulamayı geri açar.
+- Kurulumdaki `taskkill` yalnızca kullanıcı oturumlarına dokunur (`SESSION ne 0`). Oturum 0'daki `Gecit.exe`, GecitDNS hizmetidir ve düzgünce durdurulur.
+- Test için geliştirme sürümünde `GECIT_UPDATE_URL` ortam değişkeni sahte bir sürüm adresine yönlendirir. 2026-10-26'da şu testler yapıldı:
+  - Kurcalanmış özet reddedildi, kurulum çalışmadı.
+  - Gerçek güncelleme 14 saniye sürdü. Hizmetler yeniden başladı ve Geçit yöneticisiz olarak yeniden açıldı.
+
 ## Üçüncü taraf dosyalar
 
 `third_party/goodbyedpi/`, [GoodbyeDPI-Turkey](https://github.com/cagritaskn/GoodbyeDPI-Turkey) `release-0.2.3rc3-turkey` sürümünün x86_64 dosyalarıdır. 2026-10-26'da doğrulandı:
@@ -115,6 +148,8 @@ Bu bağlantıda ölçülenler (2026-10-26, Ethernet): Cloudflare'e 53 ms, modeme
 WinDivert 2.2.2 Windows Defender tarafından `Misleading:Win32/Malgent!AMTB` olarak işaretleniyor, 2.2.0 işaretlenmiyor. Bu yüzden 2.2.0 kullanılıyor.
 
 Lisanslar `third_party/goodbyedpi/licenses/` içinde: GoodbyeDPI Apache 2.0, WinDivert LGPLv3.
+
+`src/Gecit/Assets/oui.txt.gz`: IEEE MAC adres blokları kaydından (MA-L/MA-M/MA-S) türetilmiştir. Kaynak olarak Wireshark'ın `manuf` kopyası kullanılır, dosya `tools/build-oui.ps1` ile üretilir.
 
 ## Lisans
 

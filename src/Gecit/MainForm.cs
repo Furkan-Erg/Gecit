@@ -76,6 +76,7 @@ sealed partial class MainForm : Form
         ThreadPool.RegisterWaitForSingleObject(exitEvent, (_, _) => BeginInvoke(ExitApp), null, -1, true);
         _ = RestoreDpiAsync();
         LoadBlocklist();
+        StartTools();
         if (openBrowser)
             OpenBrowser();
     }
@@ -165,6 +166,7 @@ sealed partial class MainForm : Form
     {
         game.Stop();   // never leave apps frozen behind us
         traffic.Stop();
+        slow.Stop();
         speedCts?.Cancel();
         exiting = true;
         Close();
@@ -487,6 +489,7 @@ sealed partial class MainForm : Form
         switch (cmd)
         {
             case "getState":
+                BeginInvoke(ShowPendingToast);   // the page asks for its state once it has loaded
                 return BuildState();
             case "dpi.set":
                 await SetDpiAsync(args!["on"]!.GetValue<bool>());
@@ -525,6 +528,9 @@ sealed partial class MainForm : Form
                 return null;
             case var c when c.StartsWith("game.", StringComparison.Ordinal):
                 return await HandleGameAsync(cmd, args);
+            case var c when c.StartsWith("update.", StringComparison.Ordinal) || c.StartsWith("lan.", StringComparison.Ordinal)
+                            || c.StartsWith("boot.", StringComparison.Ordinal):
+                return await HandleToolsAsync(cmd, args);
             case "net.ping":
                 ping.KeepAlive();
                 var (inet, gw) = ping.Snapshot();
@@ -597,6 +603,8 @@ sealed partial class MainForm : Form
             listDate = adBlocker.ListDate,
         },
         game = GameState(),
+        update = UpdateState(),
+        lanWatch = settings.LanWatch,
     };
 
     void PushState() => Post(new { @event = "state", data = BuildState() });

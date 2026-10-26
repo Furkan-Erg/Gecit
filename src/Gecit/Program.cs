@@ -33,6 +33,14 @@ static class Program
             return 0;
         }
 
+        // --boot-measure: one logon measurement scheduled through RunOnce (Açılış page); no window.
+        if (args.Contains("--boot-measure"))
+        {
+            ApplicationConfiguration.Initialize();
+            Application.Run(new Boot.BootMeasureContext());
+            return 0;
+        }
+
         // --browser: open only the private browser (desktop shortcut); the main window stays in the tray.
         bool browserOnly = args.Contains("--browser");
 

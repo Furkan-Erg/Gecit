@@ -387,6 +387,91 @@ kbd { display: inline-block; min-width: 22px; padding: 1px 6px; margin-right: 3p
 .tr-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tr-name small { color: var(--muted); font: 11px var(--mono); margin-left: 6px; }
 
+/* ---- Güncelleme ---- */
+.update-bar {
+  max-width: 920px; margin: -14px 0 22px;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 16px; border-radius: 14px;
+  background: linear-gradient(90deg, rgba(61, 255, 162, .10), rgba(0, 240, 255, .06));
+  border: 1px solid rgba(61, 255, 162, .35);
+  animation: fade .25s ease;
+}
+.update-bar > svg { width: 22px; height: 22px; flex: none; fill: none; stroke: var(--green); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.update-text { flex: 1; min-width: 0; }
+.update-title { font-weight: 600; }
+.update-progress { margin-top: 8px; }
+.update-progress span { background: linear-gradient(90deg, var(--green), var(--cyan)); }
+.version-inline { font: 12px var(--mono); color: var(--muted); margin-left: 6px; font-weight: 400; }
+
+/* ---- Ağım ---- */
+.lan-hero { justify-content: space-between; }
+.lan-count { flex: none; width: 124px; text-align: center; }
+.lan-count-num { font: 700 56px/1 var(--mono); color: var(--cyan); text-shadow: 0 0 22px rgba(0, 240, 255, .45); }
+.lan-hero[data-state="scanning"] .lan-count-num { color: var(--amber); text-shadow: none; animation: blink 1s infinite; }
+.lan-hero .hero-text { flex: 1; min-width: 0; }
+.lan-net { font-size: 22px; font-weight: 700; margin: 2px 0 4px; }
+.lan-watch { margin-top: 14px; }
+.devices { padding: 6px 8px; }
+.dev-row { display: grid; grid-template-columns: 40px 1fr 150px 64px; gap: 14px; align-items: center; padding: 10px 12px; border-radius: 10px; }
+.dev-row:hover { background: rgba(255, 255, 255, .03); }
+.dev-row.offline { opacity: .6; grid-template-columns: 40px 1fr 150px 64px; }
+.dev-icon { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; background: rgba(0, 240, 255, .07); border: 1px solid rgba(0, 240, 255, .18); }
+.dev-icon svg { width: 21px; height: 21px; fill: none; stroke: var(--cyan); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.dev-row[data-kind="router"] .dev-icon { background: rgba(255, 42, 170, .08); border-color: rgba(255, 42, 170, .25); }
+.dev-row[data-kind="router"] .dev-icon svg { stroke: var(--magenta); }
+.dev-row.new .dev-icon { background: rgba(255, 181, 71, .1); border-color: rgba(255, 181, 71, .4); }
+.dev-row.new .dev-icon svg { stroke: var(--amber); }
+.dev-main { min-width: 0; }
+.dev-name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 600; }
+.dev-name .n { cursor: text; border-bottom: 1px dashed transparent; }
+.dev-name .n:hover { border-bottom-color: var(--line-2); }
+.dev-name input { height: 26px; width: 220px; padding: 0 8px; border-radius: 7px; border: 1px solid rgba(0, 240, 255, .5); background: #0c0a1a; color: var(--text); font: 600 13px var(--sans); outline: none; }
+.dev-sub { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dev-addr { font: 12.5px var(--mono); text-align: right; }
+.dev-addr small { display: block; font-size: 10.5px; color: var(--muted); }
+.dev-ping { font: 12.5px var(--mono); color: var(--muted); text-align: right; }
+.badge { font: 600 9.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 1px 7px; border-radius: 5px; border: 1px solid var(--line-2); color: var(--muted); }
+.badge.new { color: var(--amber); border-color: rgba(255, 181, 71, .45); }
+.badge.me { color: var(--cyan); border-color: rgba(0, 240, 255, .35); }
+.badge.gw { color: #ff8fd0; border-color: rgba(255, 42, 170, .35); }
+.badge.good { color: var(--green); border-color: rgba(61, 255, 162, .35); }
+.forget { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+.forget:hover { color: var(--text); }
+
+/* ---- Açılış ---- */
+.boot-hero { align-items: stretch; }
+.boot-big { flex: none; min-width: 200px; }
+.boot-time { font: 700 52px/1.05 var(--mono); color: var(--cyan); text-shadow: 0 0 20px rgba(0, 240, 255, .4); margin: 6px 0 4px; }
+.boot-time small { font-size: 18px; color: var(--muted); text-shadow: none; font-weight: 400; }
+.boot-time.slow { color: var(--amber); text-shadow: 0 0 20px rgba(255, 181, 71, .3); }
+.boot-time.none { color: var(--muted); text-shadow: none; }
+.boot-side { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; min-width: 0; }
+.boot-chart { width: 100%; height: 80px; display: block; }
+.boot-chart rect { fill: rgba(0, 240, 255, .35); }
+.boot-chart rect.last { fill: var(--cyan); filter: drop-shadow(0 0 6px rgba(0, 240, 255, .6)); }
+.boot-chart rect.capped { fill: rgba(255, 181, 71, .5); }
+.boot-chart text { fill: #6f6a90; font: 9px var(--mono); }
+.boot-cta { display: flex; align-items: center; gap: 12px; justify-content: flex-end; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.boot-cta .ok { color: var(--green); }
+.boot-facts { margin-top: 12px; }
+.delta-good { color: var(--green); }
+.delta-bad { color: var(--amber); }
+.boot-row { display: grid; grid-template-columns: 32px 1fr 130px 42px; gap: 14px; align-items: center; padding: 10px 12px; border-radius: 10px; }
+.boot-row:hover { background: rgba(255, 255, 255, .03); }
+.boot-row.off .boot-icon, .boot-row.off .app-name .n { opacity: .45; }
+.boot-icon { width: 32px; height: 32px; border-radius: 8px; object-fit: contain; }
+div.boot-icon { background: rgba(255, 255, 255, .05); border: 1px solid var(--line); }
+.boot-row .app-name { white-space: normal; }
+.boot-row .app-name .n { margin-right: 8px; }
+.boot-row .app-name small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.boot-hint { font-size: 12px; color: #a9a4c7; margin-top: 3px; font-weight: 400; }
+.impact { font: 600 12.5px var(--mono); text-align: right; }
+.impact small { display: block; font-size: 10.5px; color: var(--muted); font-weight: 400; }
+.impact.high { color: var(--red); }
+.impact.medium { color: var(--amber); }
+.impact.low { color: var(--green); }
+.impact.none, .impact.unknown { color: var(--muted); font-weight: 400; }
+
 /* ---- Coming soon ---- */
 .soon-card { margin-top: 24px; position: relative; }
 .soon-badge { display: inline-block; font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--magenta); border: 1px solid rgba(255, 42, 170, .4); border-radius: 6px; padding: 2px 10px; }

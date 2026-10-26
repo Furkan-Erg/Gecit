@@ -10,7 +10,7 @@
     <AssemblyName>Gecit</AssemblyName>
     <ApplicationIcon>Assets\gecit.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <Product>Geçit</Product>
     <Company>Geçit</Company>
     <PlatformTarget>x64</PlatformTarget>
@@ -42,6 +42,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Assets\gecit.ico" LogicalName="gecit.ico" />
     <EmbeddedResource Include="Assets\gecit-off.ico" LogicalName="gecit-off.ico" />
+    <EmbeddedResource Include="Assets\oui.txt.gz" LogicalName="oui.txt.gz" />
     <None Include="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\third_party\goodbyedpi\**\*" Link="dpi\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

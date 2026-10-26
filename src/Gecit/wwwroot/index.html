@@ -45,6 +45,14 @@
         <svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 4-6 5 5"/><path d="M3 21h18"/></svg>
         İnternet
       </button>
+      <button class="nav-item" data-page="lan">
+        <svg viewBox="0 0 24 24"><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 17h.01M11 17h.01"/><path d="M8.5 10.5a5 5 0 0 1 7 0M5.8 7.8a9 9 0 0 1 12.4 0"/></svg>
+        Ağım
+      </button>
+      <button class="nav-item" data-page="boot">
+        <svg viewBox="0 0 24 24"><path d="M3.5 17a8.5 8.5 0 1 1 17 0"/><path d="M12 17l4.5-6"/><path d="M3.5 21h17"/></svg>
+        Açılış
+      </button>
       <div class="nav-spacer"></div>
       <button class="nav-item" data-page="settings">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
@@ -59,6 +67,18 @@
   </aside>
 
   <main class="main">
+    <div class="update-bar" id="update-bar" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M4 19h16"/></svg>
+      <div class="update-text">
+        <div class="update-title" id="update-title"></div>
+        <div class="muted" id="update-sub"></div>
+        <div class="bar update-progress" id="update-progress-bar" hidden><span id="update-progress"></span></div>
+      </div>
+      <button class="link-btn" id="update-notes">Neler yeni?</button>
+      <button class="link-btn" id="update-later">Sonra</button>
+      <button class="btn" id="update-install">Güncelle</button>
+    </div>
+
     <!-- Engel Aşma -->
     <section class="page active" id="page-dpi">
       <header class="page-head">
@@ -305,9 +325,87 @@
       </div>
     </section>
 
+    <section class="page" id="page-lan">
+      <header class="page-head"><h1>Ağım</h1><p>Modemine bağlı her cihaz: telefonlar, televizyon, oyun konsolu… Tanımadığın bir cihaz bağlanınca haber verir.</p></header>
+
+      <div class="hero lan-hero" id="lan-hero" data-state="idle">
+        <div class="lan-count">
+          <div class="lan-count-num" id="lan-count">–</div>
+          <div class="hero-label">cihaz bağlı</div>
+        </div>
+        <div class="hero-text">
+          <div class="hero-label" id="lan-net-label">Ağ</div>
+          <div class="lan-net" id="lan-net">Henüz taranmadı</div>
+          <div class="hero-detail" id="lan-detail">Tarama birkaç saniye sürer, yönetici izni gerekmez.</div>
+        </div>
+        <button class="btn big" id="lan-scan">Tara</button>
+      </div>
+
+      <div class="card rows lan-watch">
+        <label class="row">
+          <div>
+            <div class="row-title">Yeni cihaz bağlanınca haber ver</div>
+            <div class="row-sub">Geçit açıkken 10 dakikada bir ağa bakar. Daha önce görmediği bir cihaz çıkarsa bildirim gösterir. Oyun sırasında bakmaz.</div>
+          </div>
+          <input type="checkbox" class="switch" id="lan-watch">
+        </label>
+      </div>
+
+      <h2 class="section-title">Şu an bağlı</h2>
+      <div class="card devices" id="lan-online"><div class="empty">Ağındaki cihazları görmek için "Tara"ya bas.</div></div>
+
+      <h2 class="section-title" id="lan-offline-title" hidden>Daha önce görülenler <span>Şu an bağlı değil ya da uykuda.</span></h2>
+      <div class="card devices" id="lan-offline" hidden></div>
+
+      <p class="footnote">Telefonlar gizlilik için her ağda farklı bir "gizli MAC adresi" kullanır, bu yüzden üreticileri görünmez.
+        Uykudaki telefonlar bazen taramada çıkmaz. Ad vermek için cihazın adına tıkla; adlar yalnızca bu bilgisayarda saklanır.</p>
+    </section>
+
+    <section class="page" id="page-boot">
+      <header class="page-head"><h1>Açılış</h1><p>Windows açılırken hangi programların başladığını ve açılışı ne kadar yavaşlattıklarını gösterir. Gereksizleri tek tıkla kapat; hiçbir şey silinmez.</p></header>
+
+      <div class="hero boot-hero" id="boot-hero">
+        <div class="boot-big">
+          <div class="hero-label">Son açılış</div>
+          <div class="boot-time" id="boot-time">–</div>
+          <div class="muted" id="boot-time-sub"></div>
+        </div>
+        <div class="boot-side">
+          <svg class="boot-chart" id="boot-chart" viewBox="0 0 300 80" preserveAspectRatio="none"></svg>
+          <div class="boot-cta" id="boot-cta"></div>
+        </div>
+      </div>
+      <div class="hero-meta boot-facts" id="boot-facts"></div>
+
+      <h2 class="section-title">Açılışta başlayan programlar
+        <span>Etki: açılıştan sonraki ilk dakikada kullandığı işlemci ve disk, Görev Yöneticisi'nin ölçütüyle.</span>
+        <button class="btn small" id="boot-refresh">Yenile</button>
+      </h2>
+      <div class="card apps" id="boot-items"><div class="empty">Yükleniyor…</div></div>
+
+      <p class="footnote">Kapattığın programlar silinmez, sadece Windows açılınca kendiliğinden başlamaz; istediğin zaman geri açabilirsin.
+        Bu, Görev Yöneticisi → Başlangıç sekmesiyle aynı ayardır. Görev Zamanlayıcı'yla ya da hizmet olarak başlayan programlar burada görünmez.</p>
+    </section>
+
     <!-- Ayarlar -->
     <section class="page" id="page-settings">
       <header class="page-head"><h1>Ayarlar</h1></header>
+      <div class="card rows">
+        <div class="row">
+          <div>
+            <div class="row-title">Sürüm <span class="version-inline" id="update-current"></span></div>
+            <div class="row-sub" id="update-status">Güncellemeler GitHub'daki sürüm sayfasından gelir.</div>
+          </div>
+          <button class="btn" id="update-check">Güncellemeleri denetle</button>
+        </div>
+        <label class="row">
+          <div>
+            <div class="row-title">Güncellemeleri kendiliğinden denetle</div>
+            <div class="row-sub">Açılışta ve 12 saatte bir yeni sürüm var mı diye bakar. Kurmadan önce her zaman sorar.</div>
+          </div>
+          <input type="checkbox" class="switch" id="update-auto">
+        </label>
+      </div>
       <div class="card rows">
         <label class="row">
           <div>

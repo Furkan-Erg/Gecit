@@ -89,6 +89,51 @@ public static class DnsMessage
         return list;
     }
 
+    // "1.1.168.192.in-addr.arpa" for 192.168.1.1.
+    public static string ReverseName(IPAddress ip)
+    {
+        var b = ip.GetAddressBytes();
+        return $"{b[3]}.{b[2]}.{b[1]}.{b[0]}.in-addr.arpa";
+    }
+
+    // Target of the first PTR record in the answer section, or null. Throws on a malformed message.
+    public static string? ReadPtr(ReadOnlySpan<byte> msg)
+    {
+        int anCount = BinaryPrimitives.ReadUInt16BigEndian(msg[6..]);
+        int pos = QuestionEnd(msg);
+        for (int i = 0; i < anCount && pos < msg.Length; i++)
+        {
+            pos = SkipName(msg, pos);
+            ushort type = BinaryPrimitives.ReadUInt16BigEndian(msg[pos..]);
+            ushort rdLen = BinaryPrimitives.ReadUInt16BigEndian(msg[(pos + 8)..]);
+            pos += 10;
+            if (type == 12)
+                return ReadName(msg, pos);
+            pos += rdLen;
+        }
+        return null;
+    }
+
+    static string ReadName(ReadOnlySpan<byte> msg, int pos)
+    {
+        var sb = new StringBuilder();
+        for (int jumps = 0; jumps < 16;)
+        {
+            byte len = msg[pos];
+            if (len == 0) break;
+            if ((len & 0xC0) == 0xC0)
+            {
+                pos = ((len & 0x3F) << 8) | msg[pos + 1];
+                jumps++;
+                continue;
+            }
+            if (sb.Length > 0) sb.Append('.');
+            sb.Append(Encoding.UTF8.GetString(msg.Slice(pos + 1, len)));
+            pos += len + 1;
+        }
+        return sb.ToString();
+    }
+
     static int QuestionEnd(ReadOnlySpan<byte> msg)
     {
         int qdCount = BinaryPrimitives.ReadUInt16BigEndian(msg[4..]);

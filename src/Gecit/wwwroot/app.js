@@ -18,6 +18,9 @@ host?.addEventListener("message", (e) => {
   if (m.event === "state") return render(m.data);
   if (m.event === "speed") return showSpeed(m.data);
   if (m.event === "toast") return toast(m.data.message, m.data.level);
+  if (m.event === "update") return showUpdateProgress(m.data.fraction);
+  if (m.event === "lan") return renderLan(m.data);
+  if (m.event === "boot") return bootVisible && loadBoot();
   const p = pending.get(m.id);
   if (!p) return;
   pending.delete(m.id);
@@ -87,6 +90,8 @@ function render(s) {
   $("autostart").checked = s.autostart;
   $("uninstall").disabled = s.busy;
   $("version").textContent = "v" + s.version;
+  $("lan-watch").checked = s.lanWatch;
+  renderUpdate(s.update);
 }
 
 function renderPresets(s, busy) {
@@ -445,6 +450,8 @@ document.querySelectorAll(".nav-item").forEach((btn) =>
   btn.addEventListener("click", () => {
     onGamePage(btn.dataset.page === "game");
     onNetPage(btn.dataset.page === "net");
+    onLanPage(btn.dataset.page === "lan");
+    onBootPage(btn.dataset.page === "boot");
   }));
 
 $("game-power").addEventListener("click", () =>
@@ -695,6 +702,349 @@ function probeRow(r) {
   row.querySelector(".probe-ms").textContent = r.ms != null ? r.ms + " ms" : "—";
   return row;
 }
+
+// ---- Güncelleme ----
+function renderUpdate(u) {
+  const a = u.available;
+  $("update-bar").hidden = !a || (u.dismissed && !u.installing);
+  if (a) {
+    $("update-title").textContent = u.installing ? `Geçit ${a.version} indiriliyor…` : `Geçit ${a.version} çıktı`;
+    if (!u.installing)
+      $("update-sub").textContent = `Şu an ${u.current} kullanıyorsun · ${fmtBytes(a.size)} · ${new Date(a.published).toLocaleDateString("tr-TR")}`;
+    $("update-install").disabled = u.installing;
+    $("update-install").textContent = u.installing ? "Bekle…" : "Güncelle";
+    $("update-later").hidden = u.installing;
+    $("update-progress-bar").hidden = !u.installing;
+  }
+  $("update-current").textContent = "v" + u.current;
+  $("update-auto").checked = u.auto;
+  $("update-check").disabled = u.checking || u.installing;
+  $("update-check").textContent = u.checking ? "Denetleniyor…" : "Güncellemeleri denetle";
+  const at = u.lastCheck ? new Date(u.lastCheck).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : null;
+  $("update-status").textContent = u.error
+    ?? (a ? `Yeni sürüm var: ${a.version}.` : at ? `En son sürümü kullanıyorsun (denetlendi: ${at}).` : "Güncellemeler GitHub'daki sürüm sayfasından gelir.");
+}
+
+function showUpdateProgress(f) {
+  const pct = Math.round(f * 100);
+  $("update-progress").style.width = pct + "%";
+  $("update-sub").textContent = pct < 100
+    ? `%${pct} indirildi. İndirme bitince kurulum başlar; Geçit kapanıp yeni sürümle açılır.`
+    : "Doğrulanıyor, kurulum başlıyor… Yönetici izni isteyecek.";
+}
+
+$("update-install").addEventListener("click", () => call("update.install").then(render, (e) => toast(e.message, "error")));
+$("update-later").addEventListener("click", () => call("update.dismiss").then(render));
+$("update-notes").addEventListener("click", () => state.update.available && call("app.open", { url: state.update.available.url }));
+$("update-auto").addEventListener("change", (e) => call("update.auto", { on: e.target.checked }).then(render));
+$("update-check").addEventListener("click", async () => {
+  try {
+    const s = await call("update.check");
+    render(s);
+    if (!s.update.available && !s.update.error) toast("En son sürümü kullanıyorsun.", "ok");
+  } catch (e) {
+    toast(e.message, "error");
+  }
+});
+
+// ---- Ağım ----
+const KIND_ICONS = {
+  router: '<svg viewBox="0 0 24 24"><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 17h.01M11 17h.01"/><path d="M8.5 10.5a5 5 0 0 1 7 0M5.8 7.8a9 9 0 0 1 12.4 0"/></svg>',
+  pc: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
+  phone: '<svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>',
+  tv: '<svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+  console: '<svg viewBox="0 0 24 24"><path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 15h-4l-1 .6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3"/></svg>',
+  printer: '<svg viewBox="0 0 24 24"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg>',
+  iot: '<svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>',
+  unknown: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></svg>',
+};
+const KIND_NAMES = { router: "Modem / ağ cihazı", pc: "Bilgisayar", phone: "Telefon / tablet", tv: "Televizyon", console: "Oyun konsolu", printer: "Yazıcı", iot: "Akıllı ev cihazı" };
+let lanVisited = false;
+
+function ago(iso) {
+  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 2) return "az önce";
+  if (min < 60) return min + " dk önce";
+  if (min < 48 * 60) return Math.round(min / 60) + " sa önce";
+  return Math.round(min / 1440) + " gün önce";
+}
+
+function renderLan(r) {
+  if (!r) return;
+  $("lan-hero").dataset.state = "idle";
+  $("lan-count").textContent = r.online.length;
+  $("lan-net-label").textContent = r.kind === "wifi" ? "Wi-Fi ağı" : "Kablolu ağ";
+  $("lan-net").textContent = r.ssid ?? r.adapter;
+  const gw = r.online.find((d) => d.isGateway);
+  const modem = gw ? (gw.model ?? gw.vendor) : null;
+  $("lan-detail").textContent = `${r.cidr} · modem ${r.gateway}${modem ? " (" + modem + ")" : ""} · son tarama ${new Date(r.at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`;
+  $("lan-online").replaceChildren(...r.online.map((d) => devRow(d, false)));
+  $("lan-offline-title").hidden = $("lan-offline").hidden = !r.offline.length;
+  $("lan-offline").replaceChildren(...r.offline.map((d) => devRow(d, true)));
+}
+
+function devRow(d, offline) {
+  const row = document.createElement("div");
+  row.className = "dev-row" + (offline ? " offline" : "") + (d.isNew ? " new" : "");
+  row.dataset.kind = d.kind;
+  row.innerHTML = `<div class="dev-icon">${KIND_ICONS[d.kind] ?? KIND_ICONS.unknown}</div>
+    <div class="dev-main"><div class="dev-name"><span class="n"></span></div><div class="dev-sub"></div></div>
+    <div class="dev-addr"><span class="ip"></span><small class="mac"></small></div>
+    <div class="dev-ping"></div>`;
+  const nm = row.querySelector(".n");
+  nm.textContent = d.name;
+  nm.title = "Ad vermek için tıkla";
+  const names = row.querySelector(".dev-name");
+  const badge = (text, cls) => {
+    const b = document.createElement("span");
+    b.className = "badge " + cls;
+    b.textContent = text;
+    names.append(b);
+  };
+  if (d.isSelf) badge("bu bilgisayar", "me");
+  if (d.isGateway) badge("modem", "gw");
+  if (d.isNew) badge("yeni", "new");
+  if (d.randomMac) badge("gizli MAC", "");
+
+  const sub = [KIND_NAMES[d.kind], d.model ?? d.vendor, offline ? "en son " + ago(d.lastSeen) : d.isNew ? "ilk görülme " + ago(d.firstSeen) : null];
+  row.querySelector(".dev-sub").textContent = sub.filter(Boolean).join(" · ") || "Ne olduğu anlaşılamadı";
+  row.querySelector(".ip").textContent = d.ip;
+  row.querySelector(".mac").textContent = d.mac;
+
+  const ping = row.querySelector(".dev-ping");
+  if (offline) {
+    const forget = document.createElement("button");
+    forget.className = "forget";
+    forget.textContent = "unut";
+    forget.title = "Listeden çıkar; tekrar bağlanırsa yeni cihaz olarak görünür";
+    forget.addEventListener("click", () => call("lan.forget", { mac: d.mac }).then(renderLan));
+    ping.append(forget);
+  } else if (!d.isSelf) {
+    ping.textContent = d.pingMs != null ? d.pingMs + " ms" : "—";
+    if (d.pingMs == null) ping.title = "Ping'e yanıt vermiyor (birçok telefon ve TV böyledir)";
+  }
+
+  nm.addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.value = d.customName ?? "";
+    input.placeholder = d.name;
+    input.maxLength = 40;
+    input.spellcheck = false;
+    nm.replaceWith(input);
+    input.focus();
+    let done = false;
+    const finish = (save) => {
+      if (done) return;
+      done = true;
+      if (save) call("lan.rename", { mac: d.mac, name: input.value }).then(renderLan, (e) => toast(e.message, "error"));
+      else input.replaceWith(nm);
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") finish(true);
+      if (e.key === "Escape") finish(false);
+    });
+    input.addEventListener("blur", () => finish(true));
+  });
+  return row;
+}
+
+async function scanLan() {
+  const btn = $("lan-scan");
+  btn.disabled = true;
+  btn.textContent = "Taranıyor…";
+  $("lan-hero").dataset.state = "scanning";
+  $("lan-detail").textContent = "Ağdaki her adres yoklanıyor, cihazların adları soruluyor…";
+  try {
+    renderLan(await call("lan.scan"));
+  } catch (e) {
+    toast(e.message, "error");
+    $("lan-hero").dataset.state = "idle";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Yeniden tara";
+  }
+}
+
+function onLanPage(visible) {
+  if (!visible || lanVisited) return;
+  lanVisited = true;
+  call("lan.last").then((r) => (r ? renderLan(r) : scanLan()));
+}
+
+$("lan-scan").addEventListener("click", scanLan);
+$("lan-watch").addEventListener("change", (e) => call("lan.watch", { on: e.target.checked }).then(render));
+
+// ---- Açılış ----
+const IMPACT = { high: "Yüksek", medium: "Orta", low: "Düşük", none: "Çalışmadı", unknown: "Ölçülmedi", off: "Kapalı" };
+const IMPACT_ORDER = { high: 0, medium: 1, low: 2, none: 3, unknown: 4 };
+const SOURCES = {
+  UserRun: "kayıt defteri", MachineRun: "kayıt defteri · tüm kullanıcılar", MachineRun32: "kayıt defteri · tüm kullanıcılar",
+  UserFolder: "Başlangıç klasörü", CommonFolder: "Başlangıç klasörü · tüm kullanıcılar",
+};
+let bootVisible = false;
+
+function onBootPage(visible) {
+  bootVisible = visible;
+  if (visible) loadBoot();
+}
+
+async function loadBoot() {
+  try {
+    renderBoot(await call("boot.list"));
+  } catch (e) {
+    toast(e.message, "error");
+  }
+}
+
+const sec = (s) => (s >= 100 ? Math.round(s) : s.toFixed(1));
+
+function renderBoot(b) {
+  const h = b.history;
+  const last = h[h.length - 1];
+  const prev = h[h.length - 2];
+  const t = $("boot-time");
+  const sub = $("boot-time-sub");
+  if (!last) {
+    t.className = "boot-time none";
+    t.textContent = "?";
+    sub.textContent = "Henüz ölçülmedi.";
+  } else {
+    if (last.readySeconds == null) {
+      t.className = "boot-time slow";
+      t.innerHTML = "3 dk<small>+</small>";
+      sub.textContent = "Masaüstünden sonra 3 dakika boyunca meşguldü";
+    } else {
+      t.className = "boot-time" + (last.readySeconds > 60 ? " slow" : "");
+      t.innerHTML = `${sec(last.readySeconds)}<small> sn</small>`;
+      sub.textContent = "Masaüstü göründükten sonra kullanıma hazır";
+    }
+    sub.append(" · " + new Date(last.desktopAt).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }));
+    if (prev?.readySeconds != null && last.readySeconds != null && Math.abs(last.readySeconds - prev.readySeconds) >= 2) {
+      const d = last.readySeconds - prev.readySeconds;
+      const span = document.createElement("div");
+      span.className = d < 0 ? "delta-good" : "delta-bad";
+      span.textContent = `Önceki açılıştan ${sec(Math.abs(d))} sn ${d < 0 ? "hızlı" : "yavaş"}`;
+      sub.append(span);
+    }
+  }
+  drawBootChart(h);
+
+  const cta = $("boot-cta");
+  if (b.measuring) cta.innerHTML = '<span class="ok">● Bu açılış şu an ölçülüyor…</span>';
+  else if (b.autostart) cta.textContent = "Geçit Windows'la açıldığı için her açılışı kendiliğinden ölçer.";
+  else if (b.scheduled) cta.innerHTML = '<span class="ok">✓ Bir sonraki açılışta ölçülecek</span><button class="link-btn" data-schedule="0">iptal</button>';
+  else cta.innerHTML = `<span>${last ? "Değişikliklerin etkisini görmek için:" : "Bilgisayarı yeniden başlatınca ölçülür."}</span><button class="btn" data-schedule="1">Bir sonraki açılışta ölç</button>`;
+
+  const on = b.items.filter((i) => i.enabled);
+  const heavy = on.filter((i) => i.impact === "high").length;
+  const facts = $("boot-facts");
+  facts.replaceChildren();
+  const fact = (text, cls = "tag") => { const s = document.createElement("span"); s.className = cls; s.textContent = text; facts.append(s); };
+  fact(`${on.length} program açılışta başlıyor`);
+  if (heavy) fact(`${heavy} tanesi açılışı ciddi yavaşlatıyor`, "tag pink");
+  if (b.items.length > on.length) fact(`${b.items.length - on.length} program kapatıldı`, "tag ghost");
+  if (b.bios != null) fact(`BIOS: ${sec(b.bios)} sn${b.bios > 8 ? " · BIOS'ta \"Fast Boot\" açmak birkaç saniye kazandırabilir" : ""}`, "tag ghost");
+
+  // The same program started from two places (e.g. "for me" and "for everyone"): one is enough.
+  const seen = new Map();
+  for (const i of b.items.filter((x) => x.enabled)) {
+    const key = i.command.toLowerCase();
+    seen.set(key, (seen.get(key) ?? 0) + 1);
+  }
+  b.items.forEach((i) => { i.duplicate = i.enabled && seen.get(i.command.toLowerCase()) > 1; });
+
+  const items = [...b.items].sort((x, y) => (y.enabled - x.enabled)
+    || (IMPACT_ORDER[x.impact ?? "unknown"] - IMPACT_ORDER[y.impact ?? "unknown"])
+    || x.name.localeCompare(y.name, "tr"));
+  $("boot-items").replaceChildren(...(items.length ? items.map(bootRow)
+    : [Object.assign(document.createElement("div"), { className: "empty", textContent: "Açılışta başlayan program yok." })]));
+}
+
+function drawBootChart(h) {
+  const svg = $("boot-chart");
+  const W = 300, H = 80, N = 12;
+  const data = h.slice(-N);
+  if (!data.length) {
+    svg.innerHTML = "";
+    return;
+  }
+  const val = (r) => r.readySeconds ?? 180;
+  const top = Math.max(60, ...data.map(val)) * 1.15;
+  const bw = W / N - 6;
+  svg.innerHTML = data.map((r, i) => {
+    const bh = Math.max(3, (val(r) / top) * (H - 12));
+    const x = W - (data.length - i) * (W / N) + 3;
+    const cls = i === data.length - 1 ? "last" : r.readySeconds == null ? "capped" : "";
+    const label = r.readySeconds == null ? "3 dk+" : sec(r.readySeconds) + " sn";
+    const when = new Date(r.desktopAt).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    return `<rect class="${cls}" x="${x}" y="${H - bh}" width="${bw}" height="${bh}" rx="2"><title>${when}: ${label}</title></rect>`;
+  }).join("") + `<text x="0" y="9">son ${data.length} açılış</text>`;
+}
+
+function bootRow(i) {
+  const row = document.createElement("div");
+  row.className = "boot-row" + (i.enabled ? "" : " off");
+  row.innerHTML = `${i.icon ? '<img class="boot-icon" alt="">' : '<div class="boot-icon"></div>'}
+    <div class="app-name"><span class="n"></span><small></small><div class="boot-hint" hidden></div></div>
+    <div class="impact"></div>
+    <input type="checkbox" class="switch">`;
+  if (i.icon) row.querySelector("img").src = i.icon;
+  const name = row.querySelector(".app-name");
+  name.querySelector(".n").textContent = i.name;
+  const badge = (text, cls) => {
+    const b = document.createElement("span");
+    b.className = "badge " + cls;
+    b.textContent = text;
+    name.insertBefore(b, name.querySelector("small"));
+  };
+  if (i.suggested && i.enabled) badge("kapatılabilir", "good");
+  if (i.duplicate) badge("iki kez kayıtlı", "new");
+  if (i.isWindows) badge("Windows", "");
+  if (i.missing) badge("dosyası yok", "new");
+  const small = name.querySelector("small");
+  small.textContent = [i.publisher, SOURCES[i.source]].filter(Boolean).join(" · ");
+  small.title = i.command;
+  const hintText = i.hint ?? (i.duplicate ? "Aynı program iki ayrı yerden başlatılıyor; birini kapatman yeter." : null);
+  if (hintText) {
+    const hint = name.querySelector(".boot-hint");
+    hint.hidden = false;
+    hint.textContent = hintText;
+  }
+
+  const imp = row.querySelector(".impact");
+  const key = !i.enabled ? "off" : i.impact ?? "unknown";
+  imp.className = "impact " + (key === "off" ? "none" : key);
+  imp.textContent = IMPACT[key];
+  if (i.enabled && i.cpuMs != null && i.impact !== "none") {
+    const s = document.createElement("small");
+    s.textContent = `${(i.cpuMs / 1000).toFixed(1)} sn işlemci · ${fmtBytes(i.ioBytes)}`;
+    imp.append(s);
+  } else if (i.impact === "none") {
+    imp.title = "Son açılışta çalışırken görülmedi (açılıp hemen kapanan programlar böyledir)";
+  }
+
+  const sw = row.querySelector(".switch");
+  sw.checked = i.enabled;
+  sw.title = i.needsAdmin ? "Tüm kullanıcılar için; yönetici izni ister" : "";
+  sw.addEventListener("change", async () => {
+    sw.disabled = true;
+    try {
+      renderBoot(await call("boot.set", { id: i.id, on: sw.checked }));
+      toast(sw.checked ? `${i.name} açılışta yine başlayacak.` : `${i.name} artık açılışta başlamayacak.`, "ok");
+    } catch (e) {
+      sw.checked = !sw.checked;
+      sw.disabled = false;
+      toast(e.message, "error");
+    }
+  });
+  return row;
+}
+
+$("boot-refresh").addEventListener("click", loadBoot);
+$("boot-cta").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-schedule]");
+  if (b) call("boot.schedule", { on: b.dataset.schedule === "1" }).then(renderBoot, (err) => toast(err.message, "error"));
+});
 
 function toast(message, level = "info") {
   const el = document.createElement("div");

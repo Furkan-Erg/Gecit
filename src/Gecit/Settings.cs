@@ -14,6 +14,12 @@ sealed class Settings
 
     public GameModeSettings Game { get; set; } = new();
 
+    public bool UpdateCheck { get; set; } = true;
+    public string? UpdateNotified { get; set; }     // version the tray balloon was shown for
+    public string? LastVersion { get; set; }        // to say "güncellendi" once after an update
+
+    public bool LanWatch { get; set; } = true;      // tell when an unknown device joins the network
+
     static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
     public static Settings Load()

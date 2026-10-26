@@ -60,6 +60,9 @@ Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"
 ; Services that were running before an update start again with the new files.
 Filename: "{app}\Gecit.exe"; Parameters: "--elevated resume-services"; StatusMsg: "Hizmetler yeniden başlatılıyor..."; Flags: runhidden waituntilterminated
 Filename: "{app}\Gecit.exe"; Description: "Geçit'i başlat"; Flags: nowait postinstall skipifsilent runasoriginaluser
+; Update from inside the app (Updater.Install): silent setup with /RELAUNCH=show|tray brings the app back.
+Filename: "{app}\Gecit.exe"; Flags: nowait runasoriginaluser; Check: RelaunchIs('show')
+Filename: "{app}\Gecit.exe"; Parameters: "--tray"; Flags: nowait runasoriginaluser; Check: RelaunchIs('tray')
 
 [UninstallRun]
 ; Restores the original DNS settings and removes the GecitDNS/GecitDPI services and WinDivert driver.
@@ -81,14 +84,15 @@ begin
 end;
 
 // The tray app hides instead of closing, so ask it to exit properly (ends game mode, unfreezes apps),
-// and only then force it.
+// and only then force it. Session 0 is left alone: that Gecit.exe is the GecitDNS service, which
+// StopService stops cleanly (killing it makes the service manager restart it from the old files).
 procedure StopRunningApp(Exe: String);
 var
   ResultCode: Integer;
 begin
   if FileExists(Exe) then
     Exec(Exe, '--exit', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/f /im Gecit.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/f /im Gecit.exe /fi "SESSION ne 0"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
 // "RUNNING", "STOPPED", ... or '' if the service doesn't exist.
@@ -144,6 +148,11 @@ begin
     ForceDirectories(ExpandConstant('{app}'));
     SaveStringToFile(ExpandConstant('{app}\paused-services.json'), '[' + Copy(Running, 1, Length(Running) - 1) + ']', False);
   end;
+end;
+
+function RelaunchIs(Mode: String): Boolean;
+begin
+  Result := WizardSilent and (CompareText(ExpandConstant('{param:relaunch|}'), Mode) = 0);
 end;
 
 function InitializeUninstall: Boolean;

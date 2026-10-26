@@ -27,14 +27,20 @@ static class Elevated
         {
             throw new InvalidOperationException("Yönetici izni verilmedi.");
         }
+        // Read the exit code before disposing: afterwards ExitCode throws "No process is associated with
+        // this object" and every successful elevated action looked like a failure.
+        int exitCode;
         using (p)
+        {
             await p.WaitForExitAsync();
+            exitCode = p.ExitCode;
+        }
 
-        if (p.ExitCode != 0)
+        if (exitCode != 0)
         {
             string detail = File.Exists(AppPaths.ElevatedResultFile)
                 ? await File.ReadAllTextAsync(AppPaths.ElevatedResultFile)
-                : $"çıkış kodu {p.ExitCode}";
+                : $"çıkış kodu {exitCode}";
             throw new InvalidOperationException(detail);
         }
     }
@@ -80,6 +86,12 @@ static class Elevated
                     break;
                 case "resume-services":   // setup, after replacing files
                     AppInstall.ResumeServices();
+                    break;
+                case "startup":    // startup <MachineRun|MachineRun32|CommonFolder> <name> <on|off>
+                    var source = Enum.Parse<Boot.StartupSource>(args[1]);
+                    if (source is Boot.StartupSource.UserRun or Boot.StartupSource.UserFolder)
+                        throw new ArgumentException("Kullanıcı öğeleri yönetici gerektirmez.");   // HKCU of the admin account would be wrong
+                    Boot.StartupItems.SetEnabled(source, args[2], args[3] == "on");
                     break;
                 default:
                     throw new ArgumentException($"Bilinmeyen komut: {string.Join(' ', args)}");
