@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Geçit</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="var(--cyan)"/><stop offset="1" stop-color="var(--magenta)"/>
+          </linearGradient>
+        </defs>
+        <path d="M12 38V24a12 12 0 0 1 24 0v14" fill="none" stroke="url(#g)" stroke-width="4.5" stroke-linecap="round"/>
+        <path d="M20 23l7 6-7 6" fill="none" stroke="url(#g)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <div class="brand-name">GEÇİT</div>
+        <div class="brand-sub">özgür internet</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-page="dpi">
+        <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>
+        Engel Aşma
+      </button>
+      <button class="nav-item" data-page="dns">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg>
+        Akıllı DNS
+      </button>
+      <button class="nav-item" data-page="browser">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><circle cx="12" cy="15" r="2.5"/></svg>
+        Gizli Tarayıcı <span class="soon">yakında</span>
+      </button>
+      <button class="nav-item" data-page="game">
+        <svg viewBox="0 0 24 24"><path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 15h-4l-1 .6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16.5" cy="12" r=".8"/><circle cx="18" cy="13.6" r=".8"/></svg>
+        Oyun Modu <span class="soon">yakında</span>
+      </button>
+      <button class="nav-item" data-page="net">
+        <svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 4-6 5 5"/><path d="M3 21h18"/></svg>
+        İnternet <span class="soon">yakında</span>
+      </button>
+      <div class="nav-spacer"></div>
+      <button class="nav-item" data-page="settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        Ayarlar
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <span class="pill" id="side-pill"><span class="dot"></span><span id="side-pill-text">kapalı</span></span>
+      <span class="version" id="version"></span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- Engel Aşma -->
+    <section class="page active" id="page-dpi">
+      <header class="page-head">
+        <h1>Engel Aşma</h1>
+        <p>Discord, Roblox ve operatörün engellediği diğer siteleri VPN'siz açar. Trafiğin başka bir sunucudan geçmez, hızın değişmez.</p>
+      </header>
+
+      <div class="banner warn" id="conflict-banner" hidden></div>
+
+      <div class="hero" id="hero" data-state="notinstalled">
+        <button class="power" id="power" aria-label="Engel aşmayı aç/kapat">
+          <span class="power-ring"></span>
+          <svg viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/></svg>
+        </button>
+        <div class="hero-text">
+          <div class="hero-label">Durum</div>
+          <div class="hero-status" id="hero-status">Kapalı</div>
+          <div class="hero-detail" id="hero-detail">Açmak için düğmeye bas. İlk açılışta hizmet bir kez kurulur.</div>
+          <div class="hero-meta">
+            <span class="tag" id="hero-preset"></span>
+            <span class="tag" id="hero-dns"></span>
+            <span class="tag ghost">GoodbyeDPI 0.2.3rc3 · WinDivert 2.2</span>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="section-title">Yöntem <span>Bir site açılmazsa sırayla başka bir yöntem dene. DNS engelini Akıllı DNS ya da (o kapalıyken) Yandex yönlendirmesi aşar.</span></h2>
+      <div class="presets" id="presets"></div>
+
+      <h2 class="section-title">Bağlantı testi <span>Engelli siteler şu an bu bilgisayardan açılıyor mu?</span></h2>
+      <div class="card">
+        <div class="probe-head">
+          <button class="btn" id="probe-run">Testi çalıştır</button>
+          <span class="muted" id="probe-time"></span>
+        </div>
+        <div class="probe-list" id="probe-list">
+          <div class="empty">Henüz test yapılmadı.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Yakında sayfaları -->
+    <section class="page" id="page-dns">
+      <header class="page-head">
+        <h1>Akıllı DNS</h1>
+        <p>DNS, site adlarını adrese çeviren sistemdir. Operatörün DNS'i engelli sitelere sahte adres verir ve yavaş olabilir.</p>
+      </header>
+
+      <div class="dns-status" id="dns-status">
+        <div class="dns-status-main">
+          <div class="hero-label">Şu anki DNS</div>
+          <div class="dns-status-title" id="dns-current"></div>
+          <div class="dns-servers" id="dns-servers"></div>
+        </div>
+        <div class="dns-checks" id="dns-checks">
+          <div class="check wait"><span class="dot"></span><span>Kontrol ediliyor…</span></div>
+        </div>
+      </div>
+
+      <h2 class="section-title">Mod</h2>
+      <div class="modes" id="dns-modes">
+        <button class="mode" data-mode="auto">
+          <div class="mode-name">Otomatik</div>
+          <div class="mode-desc">Modemin verdiği operatör DNS'i. Engel aşma açıksa Yandex yönlendirmesi engeli aşar.</div>
+        </button>
+        <button class="mode" data-mode="plain">
+          <div class="mode-name">Hızlı DNS</div>
+          <div class="mode-desc">Seçtiğin sağlayıcıyı Windows'a yazar. Arka planda hiçbir şey çalışmaz.</div>
+        </button>
+        <button class="mode" data-mode="doh">
+          <div class="mode-name">Şifreli DNS <span class="preset-badge">önerilen</span></div>
+          <div class="mode-desc">Sorgular HTTPS ile gider; operatör DNS sorgularını göremez ve değiştiremez. Küçük bir hizmet çalışır.</div>
+        </button>
+      </div>
+
+      <h2 class="section-title">Sağlayıcı
+        <span>Ping: sunucuya uzaklık · Sorgu: bir site adını çözme süresi</span>
+        <button class="btn small" id="dns-bench">Hızları ölç</button>
+      </h2>
+      <div class="card providers" id="dns-providers"></div>
+
+      <div class="apply-bar" id="dns-apply-bar" hidden>
+        <div>
+          <div class="apply-title" id="dns-apply-text"></div>
+          <div class="muted">Yönetici izni ister. İstediğin zaman Otomatik'e dönerek eski ayarlarına geri alabilirsin.</div>
+        </div>
+        <button class="btn" id="dns-apply">Uygula</button>
+      </div>
+
+      <p class="footnote">Şifreli DNS sadece DNS sorgularını gizler; girdiğin sitenin adı bağlantı sırasında operatöre yine görünür.
+        Tam gizlilik için VPN gerekir.</p>
+    </section>
+    <section class="page" id="page-browser">
+      <header class="page-head"><h1>Gizli Tarayıcı</h1><p>İz bırakmayan, kendi içinde çalışan bir tarayıcı.</p></header>
+      <div class="card soon-card">
+        <div class="soon-badge">Yakında</div>
+        <ul class="plan">
+          <li>Sekmeli tarama, kapanınca geçmiş, çerez ve önbellek silinir</li>
+          <li>Dahili reklam ve takipçi engelleyici</li>
+          <li>Engel aşma bu tarayıcıda da otomatik çalışır</li>
+        </ul>
+      </div>
+    </section>
+    <section class="page" id="page-game">
+      <header class="page-head"><h1>Oyun Modu</h1><p>Oyuna RAM ve işlemci bırakır, takılmaları azaltır.</p></header>
+      <div class="card soon-card">
+        <div class="soon-badge">Yakında</div>
+        <ul class="plan">
+          <li>Oyun açılınca seçtiğin arka plan uygulamalarını kapatır veya dondurur</li>
+          <li>Yüksek performans güç planı ve oyuna yüksek öncelik</li>
+          <li>Oyun sırasında Windows Update indirmelerini durdurur</li>
+          <li>Oyun kapanınca her şeyi eski haline getirir</li>
+        </ul>
+      </div>
+    </section>
+    <section class="page" id="page-net">
+      <header class="page-head"><h1>İnternet</h1><p>Bağlantının gerçek durumunu gösterir.</p></header>
+      <div class="card soon-card">
+        <div class="soon-badge">Yakında</div>
+        <ul class="plan">
+          <li>Canlı ping ve jitter grafiği</li>
+          <li>Dahili hız testi</li>
+          <li>Hangi uygulama interneti ne kadar kullanıyor</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Ayarlar -->
+    <section class="page" id="page-settings">
+      <header class="page-head"><h1>Ayarlar</h1></header>
+      <div class="card rows">
+        <label class="row">
+          <div>
+            <div class="row-title">Windows açılınca başlat</div>
+            <div class="row-sub">Geçit sistem tepsisinde açılır, engel aşmayı son bıraktığın gibi geri yükler.</div>
+          </div>
+          <input type="checkbox" class="switch" id="autostart">
+        </label>
+        <div class="row">
+          <div>
+            <div class="row-title">Geçit'i sistemden temizle</div>
+            <div class="row-sub">Engel aşma ve şifreli DNS hizmetlerini kaldırır, WinDivert sürücüsünü durdurur ve DNS ayarlarını Geçit'ten önceki haline getirir. Yönetici izni ister.</div>
+          </div>
+          <button class="btn danger" id="uninstall">Temizle</button>
+        </div>
+      </div>
+      <div class="card about">
+        <div class="row-title">Hakkında</div>
+        <p>Geçit, engel aşma için <a href="https://github.com/cagritaskn/GoodbyeDPI-Turkey" data-ext>GoodbyeDPI-Turkey</a> (Apache 2.0) ve
+          <a href="https://github.com/basil00/WinDivert" data-ext>WinDivert</a> (LGPLv3) kullanır. Bu bir VPN değildir: kimliğini gizlemez,
+          sadece operatörün DPI ve DNS engellerini aşar.</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="toasts" id="toasts"></div>
+  <script src="app.js"></script>
+</body>
+</html>
