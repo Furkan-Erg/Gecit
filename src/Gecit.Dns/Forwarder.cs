@@ -10,7 +10,9 @@ namespace Gecit.Dns;
 public sealed class Forwarder : IAsyncDisposable
 {
     static readonly string[] FallbackIds = ["cloudflare", "google", "quad9"];
-    static readonly TimeSpan UpstreamTimeout = TimeSpan.FromSeconds(2.5);
+    // Generous: the first query to each upstream also pays for TCP + TLS setup, which is slow when
+    // the service has just started cold. Too short a timeout cascades through every upstream.
+    static readonly TimeSpan UpstreamTimeout = TimeSpan.FromSeconds(4);
     static readonly TimeSpan PenaltyBox = TimeSpan.FromSeconds(30);
 
     sealed class Upstream(DohClient client)
@@ -70,7 +72,7 @@ public sealed class Forwarder : IAsyncDisposable
             SocketReceiveFromResult r;
             try { r = await udp.ReceiveFromAsync(buf, SocketFlags.None, any, stop.Token); }
             catch (OperationCanceledException) { return; }
-            catch (SocketException e) { Log?.Invoke("udp recv: " + e.SocketErrorCode); continue; }   // e.g. ICMP port unreachable from a previous reply
+            catch (SocketException) { continue; }   // e.g. ICMP port unreachable from a previous reply
             if (r.ReceivedBytes < 12)
                 continue;
             byte[] query = buf.AsSpan(0, r.ReceivedBytes).ToArray();

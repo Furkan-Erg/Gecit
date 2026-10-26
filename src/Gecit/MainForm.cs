@@ -29,6 +29,7 @@ sealed partial class MainForm : Form
     readonly Settings settings = Settings.Load();
     readonly EventWaitHandle showEvent = new(false, EventResetMode.AutoReset, Program.ShowEventName);
     readonly EventWaitHandle browserEvent = new(false, EventResetMode.AutoReset, Program.BrowserEventName);
+    readonly EventWaitHandle exitEvent = new(false, EventResetMode.AutoReset, Program.ExitEventName);
     readonly AdBlocker adBlocker = new();
     readonly GameModeService game;
     readonly PingMonitor ping = new();
@@ -72,6 +73,7 @@ sealed partial class MainForm : Form
 
         ThreadPool.RegisterWaitForSingleObject(showEvent, (_, _) => BeginInvoke(ShowFromTray), null, -1, false);
         ThreadPool.RegisterWaitForSingleObject(browserEvent, (_, _) => BeginInvoke(() => OpenBrowser()), null, -1, false);
+        ThreadPool.RegisterWaitForSingleObject(exitEvent, (_, _) => BeginInvoke(ExitApp), null, -1, true);
         _ = RestoreDpiAsync();
         LoadBlocklist();
         if (openBrowser)

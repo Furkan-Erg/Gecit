@@ -44,9 +44,8 @@ static class DnsSetup
     static void InstallForwarder(DnsProvider provider)
     {
         ServiceTool.Stop(ServiceName);
-        ServiceTool.CopyFiles(AppPaths.BundledDnsDir, AppPaths.InstalledDnsDir, "*");
-        string exe = Path.Combine(AppPaths.InstalledDnsDir, "Gecit.Dns.exe");
-        ServiceTool.CreateOrUpdate(ServiceName, $"\"{exe}\" {provider.Id}", "auto", "Geçit DNS",
+        AppInstall.EnsureInstalledCopy();
+        ServiceTool.CreateOrUpdate(ServiceName, $"\"{AppPaths.InstalledExe}\" --dns-service {provider.Id}", "auto", "Geçit DNS",
             "Geçit: şifreli DNS (DNS-over-HTTPS). Durdurulursa DNS çalışmaz; Geçit'ten Otomatik moda geçerek kaldırın.",
             ServiceSddl, account: @"NT AUTHORITY\LocalService");
         ServiceTool.Sc("failure", ServiceName, "reset=", "86400", "actions=", "restart/2000/restart/5000/restart/10000");
@@ -55,18 +54,20 @@ static class DnsSetup
         try
         {
             ServiceTool.Start(ServiceName);
-            if (!AnswersOnLoopback(TimeSpan.FromSeconds(8)))
+            // A cold service start pays for runtime start-up plus a TLS handshake per upstream.
+            if (!AnswersOnLoopback(TimeSpan.FromSeconds(20)))
                 problem = "hizmet başladı ama sorgulara yanıt vermedi";
         }
         catch (Exception e) when (e is InvalidOperationException or System.ServiceProcess.TimeoutException)
         {
-            // Typically port 53 is already taken by another DNS tool.
             problem = "hizmet başlatılamadı (53 numaralı port başka bir program tarafından kullanılıyor olabilir)";
         }
         if (problem is not null)
         {
             ServiceTool.Remove(ServiceName);
-            throw new InvalidOperationException($"Şifreli DNS açılamadı: {problem}. Sistem DNS'i değiştirilmedi.");
+            string log = DnsWindowsService.LogTail(6);
+            throw new InvalidOperationException($"Şifreli DNS açılamadı: {problem}. Sistem DNS'i değiştirilmedi."
+                + (log.Length > 0 ? $"\n\nHizmet günlüğü ({DnsWindowsService.LogFile}):\n{log}" : ""));
         }
     }
 
@@ -76,7 +77,7 @@ static class DnsSetup
         byte[] query = DnsMessage.BuildQuery("cloudflare.com", id: 0x4745);
         while (sw.Elapsed < within)
         {
-            using var udp = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) { ReceiveTimeout = 3000 };
+            using var udp = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) { ReceiveTimeout = 6000 };
             try
             {
                 udp.SendTo(query, new IPEndPoint(IPAddress.Loopback, 53));

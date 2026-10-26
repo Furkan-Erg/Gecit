@@ -1,0 +1,14 @@
+﻿GEÇİT HAKKINDA BİLMENİZ GEREKENLER
+
+Geçit şu araçları bir araya getirir: engel aşma, akıllı/şifreli DNS, gizli tarayıcı, oyun modu ve internet ölçümü.
+
+ENGEL AŞMA
+- Açık kaynaklı GoodbyeDPI (Apache 2.0) ve WinDivert (LGPLv3) kullanır. WinDivert bir ağ sürücüsüdür. Bazı antivirüs programları (özellikle Kaspersky) bunu yanlışlıkla tehlikeli olarak işaretleyebilir.
+- Geçit bir VPN DEĞİLDİR. Kimliğinizi veya IP adresinizi gizlemez, sadece operatörün DPI ve DNS engellerini aşar.
+- Kullanımdan doğan her türlü yasal sorumluluk kullanıcıya aittir.
+
+YÖNETİCİ İZNİ
+- Engel aşma, şifreli DNS ve uygulama trafiği izleme Windows hizmetleri ve sürücüleri gerektirdiği için bu işlemler bir kereye mahsus yönetici izni ister.
+- Geçit'i "Ayarlar > Geçit'i sistemden temizle" ile ya da Denetim Masası'ndan kaldırdığınızda hizmetler silinir ve DNS ayarlarınız Geçit'ten önceki haline döner.
+
+Bu yazılımın kod imzası yoktur. Bu yüzden Windows "Bilgisayarınız korundu" uyarısı gösterebilir. Devam etmek için "Ek bilgi" > "Yine de çalıştır" seçeneğine tıklayın.

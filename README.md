@@ -19,6 +19,21 @@ dotnet build
 .\src\Gecit\bin\Debug\net10.0-windows\win-x64\Gecit.exe
 ```
 
+## Kurulum paketi
+
+```powershell
+winget install JRSoftware.InnoSetup   # bir kez
+pwsh installer\build.ps1              # -> dist\Gecit-Setup-<sürüm>.exe
+```
+
+- `dotnet publish` self-contained çalışır, kullanıcının .NET kurması gerekmez. Paket yaklaşık 38 MB (kurulu hali yaklaşık 120 MB). Sürüm numarası `src\Gecit\Gecit.csproj` içindeki `<Version>` alanından alınır.
+- Uygulama `C:\Program Files\Gecit` klasörüne kurulur. Klasör seçilemez, çünkü hizmetler `Gecit.exe`'yi buradan çalıştırır: `GecitDNS` = `Gecit.exe --dns-service <sağlayıcı>`, `GecitDPI` = `dpi\goodbyedpi.exe`. Geliştirme sürümü çalışırken bu klasöre kendini kopyalar (`AppInstall.EnsureInstalledCopy`).
+- WebView2 yoksa Microsoft'un bootstrapper'ı sessizce kurulur.
+- Güncelleme: kurulum çalışan uygulamayı `Gecit.exe --exit` ile düzgünce kapatır (oyun modu bitirilir, dondurulanlar çözülür). Ardından `sc` ile GecitDNS/GecitDPI hizmetlerini ve WinDivert sürücüsünü durdurur. Dosyalar değiştikten sonra `--elevated resume-services` daha önce çalışanları yeniden başlatır.
+- Kaldırma: `--elevated uninstall --full` çalışır. DNS eski haline döner, hizmetler ve sürücü silinir, açılışta başlatma kaydı silinir. Ardından klasör, kısayollar, `%LOCALAPPDATA%\Gecit` ve `%ProgramData%\Gecit` silinir. Kullanıcı ayarları (`%APPDATA%\Gecit`) korunur. 2026-10-26'da sessiz kurulum, kaldırma ve yeniden kurma ile doğrulandı.
+- Paketin kod imzası yok, bu yüzden SmartScreen "Bilgisayarınız korundu" uyarısı gösterir. Kurulumdaki bilgilendirme sayfası (`installer\notice-tr.txt`) bunu ve VPN olmadığını açıklar.
+- Şifreli DNS hizmetinin günlüğü `%ProgramData%\Gecit\dns.log` dosyasına yazılır. Hizmet doğrulamayı geçemezse son satırlar hata mesajına eklenir.
+
 ## Nasıl çalışır
 
 ```
@@ -41,7 +56,7 @@ Gecit.exe (normal kullanıcı)            Gecit.exe --elevated install <yöntem>
 |---|---|
 | Otomatik | Modemin/operatörün DNS'i (Geçit'ten önceki ayar geri yüklenir). Engel aşma açıkken GoodbyeDPI'ın Yandex yönlendirmesi DNS engelini aşar. |
 | Hızlı DNS | Seçilen sağlayıcının adreslerini internete bağlı bağdaştırıcılara yazar (`netsh`). Arka planda bir şey çalışmaz. |
-| Şifreli DNS | `GecitDNS` hizmeti (`src/Gecit.Dns`, LocalService hesabıyla) 127.0.0.1:53 ve [::1]:53'te dinler, sorguları RFC 8484 DoH ile iletir. Sistem DNS'i 127.0.0.1 / ::1 olur. |
+| Şifreli DNS | `GecitDNS` hizmeti (`Gecit.exe --dns-service`, kodu `src/Gecit.Dns`, LocalService hesabıyla) 127.0.0.1:53 ve [::1]:53'te dinler, sorguları RFC 8484 DoH ile iletir. Sistem DNS'i 127.0.0.1 / ::1 olur. |
 
 - GoodbyeDPI'ın Yandex DNS yönlendirmesi, Akıllı DNS açıkken kapatılır; yoksa kullanıcının seçtiği DNS'i ezerdi. Yöntemler (Standart, TTL'siz, Sağlam, TTL 3) bundan bağımsızdır.
 - Güvenlik sırası: sistem DNS'i, DoH hizmeti gerçek bir sorguyu yanıtladıktan **sonra** 127.0.0.1'e çevrilir. Hizmet kaldırılmadan **önce** de başka adrese çevrilir. Böylece DNS'siz kalınan bir an olmaz.

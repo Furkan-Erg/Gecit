@@ -14,7 +14,7 @@ static class DpiInstaller
     public static void Install(DpiPreset preset, bool dnsRedirect)
     {
         bool wasRunning = ServiceTool.Stop(ServiceName);
-        ServiceTool.CopyFiles(AppPaths.BundledDpiDir, AppPaths.InstalledDpiDir, "*");
+        AppInstall.EnsureInstalledCopy();
 
         string exe = Path.Combine(AppPaths.InstalledDpiDir, "goodbyedpi.exe");
         ServiceTool.CreateOrUpdate(ServiceName, $"\"{exe}\" {preset.Args(dnsRedirect)}", "demand", "Geçit DPI",
@@ -36,9 +36,5 @@ static class DpiInstaller
         ServiceTool.Remove(ServiceName);
         // WinDivert's driver stays loaded until stopped; GoodbyeDPI's own remover does the same.
         ServiceTool.Remove(DriverServiceName);
-
-        try { Directory.Delete(AppPaths.InstalledDpiDir, recursive: true); }
-        catch (IOException) { }      // driver file still locked until reboot; harmless leftover
-        catch (UnauthorizedAccessException) { }
     }
 }

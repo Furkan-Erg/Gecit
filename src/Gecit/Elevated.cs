@@ -72,11 +72,14 @@ static class Elevated
                     var provider = DnsProviders.Find(args[2]) ?? throw new ArgumentException($"Bilinmeyen DNS: {args[2]}");
                     DnsSetup.Apply(Enum.Parse<DnsMode>(args[1], ignoreCase: true), provider, DpiPresets.Get(args[3]));
                     break;
-                case "uninstall":
-                    UninstallAll();
+                case "uninstall":  // uninstall [--full]   (--full: from the setup's uninstaller)
+                    UninstallAll(full: args.Contains("--full"));
                     break;
                 case "netmon":     // netmon <pipe> <uiPid>
                     Net.TrafficCollector.Run(args[1], int.Parse(args[2]));
+                    break;
+                case "resume-services":   // setup, after replacing files
+                    AppInstall.ResumeServices();
                     break;
                 default:
                     throw new ArgumentException($"Bilinmeyen komut: {string.Join(' ', args)}");
@@ -86,20 +89,27 @@ static class Elevated
         catch (Exception e)
         {
             File.WriteAllText(AppPaths.ElevatedResultFile, e.Message);
+            File.AppendAllText(Program.ErrorLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] elevated {string.Join(' ', args)}: {e}\n\n");
             return 1;
         }
     }
 
-    // Leaves the system as it was before Geçit: original DNS, no services, no files in Program Files.
-    static void UninstallAll()
+    // Leaves the system as it was before Geçit: original DNS, no services. Files in Program Files go
+    // too when they're a development copy; a setup install keeps them for its own uninstaller.
+    static void UninstallAll(bool full)
     {
         if (File.Exists(AppPaths.DnsBackupFile) || ServiceTool.Exists(DnsSetup.ServiceName))
             SystemDns.Restore();
         ServiceTool.Remove(DnsSetup.ServiceName);
         DpiInstaller.Uninstall();
-        try { Directory.Delete(AppPaths.InstallRoot, recursive: true); }
-        catch (IOException) { }      // a still-loaded WinDivert64.sys; gone after reboot
-        catch (UnauthorizedAccessException) { }
+        if (!AppPaths.RunningFromInstallRoot)
+        {
+            try { Directory.Delete(AppPaths.InstallRoot, recursive: true); }
+            catch (IOException) { }      // a still-loaded WinDivert64.sys; gone after reboot
+            catch (UnauthorizedAccessException) { }
+        }
+        if (full)
+            Autostart.Set(false);
         DnsService.FlushCache();
     }
 }

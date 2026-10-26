@@ -60,7 +60,8 @@ static partial class DnsService
         using var key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{DnsSetup.ServiceName}");
         if (key?.GetValue("ImagePath") is not string imagePath)
             return "notinstalled";
-        providerId = imagePath[(imagePath.LastIndexOf('"') + 1)..].Trim();
+        // "<exe>" --dns-service <provider>
+        providerId = imagePath.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
         try
         {
             using var sc = new ServiceController(DnsSetup.ServiceName);

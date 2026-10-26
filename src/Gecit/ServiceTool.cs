@@ -65,6 +65,8 @@ static class ServiceTool
         foreach (string src in Directory.EnumerateFiles(from, pattern, SearchOption.AllDirectories))
         {
             string dst = Path.Combine(to, Path.GetRelativePath(from, src));
+            if (string.Equals(Path.GetFullPath(src), Path.GetFullPath(dst), StringComparison.OrdinalIgnoreCase))
+                continue;
             Directory.CreateDirectory(Path.GetDirectoryName(dst)!);
             // A loaded driver or running exe can't be overwritten, so skip files that are already identical.
             if (File.Exists(dst) && SameContent(src, dst))

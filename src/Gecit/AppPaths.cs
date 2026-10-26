@@ -4,14 +4,17 @@ static class AppPaths
 {
     public static string AppDir => AppContext.BaseDirectory;
     public static string WebRoot => Path.Combine(AppDir, "wwwroot");
-    public static string BundledDpiDir => Path.Combine(AppDir, "dpi");
-    public static string BundledDnsDir => Path.Combine(AppDir, "dnssvc");
-
     // Services run their binaries from Program Files, where normal users can't replace them.
+    // The setup installs the app right there; a development build is copied there first (AppInstall).
     public static string InstallRoot =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Gecit");
+    public static string InstalledExe => Path.Combine(InstallRoot, "Gecit.exe");
     public static string InstalledDpiDir => Path.Combine(InstallRoot, "dpi");
-    public static string InstalledDnsDir => Path.Combine(InstallRoot, "dns");
+
+    public static bool RunningFromInstallRoot => string.Equals(
+        Path.TrimEndingDirectorySeparator(Path.GetFullPath(AppDir)),
+        Path.TrimEndingDirectorySeparator(Path.GetFullPath(InstallRoot)),
+        StringComparison.OrdinalIgnoreCase);
 
     // DNS settings from before Geçit changed them; admin-only location so restore can't be tampered with.
     public static string DnsBackupFile => Path.Combine(InstallRoot, "dns-backup.json");

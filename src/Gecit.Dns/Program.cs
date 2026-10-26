@@ -1,9 +1,10 @@
 ﻿using System.ServiceProcess;
 using Gecit.Dns;
 
-// Usage: Gecit.Dns.exe <providerId>                     (started by the service manager as GecitDNS)
-//        Gecit.Dns.exe <providerId> --console [--port N] (manual testing)
+// Test tool for the forwarder (the real service is hosted by Gecit.exe --dns-service).
+// Usage: Gecit.Dns.exe <providerId> --console [--port N]   (forwarder in this console)
 //        Gecit.Dns.exe <providerId> --query <name>         (one DoH lookup, prints the result or error)
+//        Gecit.Dns.exe <providerId>                        (as a Windows service)
 var provider = DnsProviders.Find(args.FirstOrDefault()) ?? DnsProviders.All[0];
 
 if (args.Contains("--query"))
@@ -37,28 +38,3 @@ if (args.Contains("--console"))
 }
 
 ServiceBase.Run(new DnsWindowsService(provider));
-
-sealed class DnsWindowsService : ServiceBase
-{
-    readonly DnsProvider provider;
-    Forwarder? forwarder;
-
-    public DnsWindowsService(DnsProvider provider)
-    {
-        this.provider = provider;
-        ServiceName = "GecitDNS";
-        CanShutdown = true;
-        // AutoLog would register an event source, which LocalService isn't allowed to do.
-        AutoLog = false;
-    }
-
-    protected override void OnStart(string[] args)
-    {
-        forwarder = new Forwarder(provider);
-        forwarder.Start();
-    }
-
-    protected override void OnStop() => forwarder?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5));
-
-    protected override void OnShutdown() => OnStop();
-}

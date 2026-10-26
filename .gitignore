@@ -1,6 +1,8 @@
 bin/
 obj/
 publish/
+dist/
+installer/MicrosoftEdgeWebview2Setup.exe
 .vs/
 *.user
 *.suo
