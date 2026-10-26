@@ -20,6 +20,12 @@ sealed class Settings
 
     public bool LanWatch { get; set; } = true;      // tell when an unknown device joins the network
 
+    public List<WatchedDemo> DemoWatch { get; set; } = [];   // upcoming Steam demos to announce when playable
+    public string DemoPlayers { get; set; } = "all";          // Demolar player filter: all | coop | online | multi
+
+    public bool FreeNotify { get; set; } = true;              // tell when Epic/Steam give a game away
+    public List<string> FreeSeen { get; set; } = [];          // giveaways already announced ("epic:<id>", "steam:<appid>")
+
     static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
     public static Settings Load()
@@ -34,6 +40,12 @@ sealed class Settings
     }
 
     public void Save() => File.WriteAllText(AppPaths.SettingsFile, JsonSerializer.Serialize(this, Json));
+}
+
+sealed class WatchedDemo
+{
+    public required Store.Demo Demo { get; set; }
+    public bool Released { get; set; }
 }
 
 sealed class GameModeSettings

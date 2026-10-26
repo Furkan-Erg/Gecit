@@ -21,6 +21,8 @@ host?.addEventListener("message", (e) => {
   if (m.event === "update") return showUpdateProgress(m.data.fraction);
   if (m.event === "lan") return renderLan(m.data);
   if (m.event === "boot") return bootVisible && loadBoot();
+  if (m.event === "demos") return refreshDemoWatch();
+  if (m.event === "free") return freeVisited && loadFree();
   const p = pending.get(m.id);
   if (!p) return;
   pending.delete(m.id);
@@ -452,6 +454,8 @@ document.querySelectorAll(".nav-item").forEach((btn) =>
     onNetPage(btn.dataset.page === "net");
     onLanPage(btn.dataset.page === "lan");
     onBootPage(btn.dataset.page === "boot");
+    onDemosPage(btn.dataset.page === "demos");
+    onFreePage(btn.dataset.page === "free");
   }));
 
 $("game-power").addEventListener("click", () =>
@@ -1045,6 +1049,351 @@ $("boot-cta").addEventListener("click", (e) => {
   const b = e.target.closest("[data-schedule]");
   if (b) call("boot.schedule", { on: b.dataset.schedule === "1" }).then(renderBoot, (err) => toast(err.message, "error"));
 });
+
+// ---- Demolar ----
+const demoLists = {};          // "list|players" -> { items, total, error, loading, loadingMore }
+let demoList = "new";
+let demoPlayers = "all";       // all | coop | online | multi; filtered by Steam itself, remembered by the host
+const demoKey = () => demoList + "|" + demoPlayers;
+// The same filter for the watch list, which is filtered here.
+const PLAYER_MATCH = {
+  coop: (p) => p.some((x) => x.includes("co-op")),
+  online: (p) => p.includes("Online co-op"),
+  multi: (p) => p.length > 0,
+};
+let demoWatch = { steam: false, watch: [] };
+let demoQuery = "";
+const demoFilters = new Set();  // "tr", "deck" and tag names
+let demosVisited = false;
+
+const DAY = 86400000;
+function dayDiff(date) {
+  const d = new Date(date), t = new Date();
+  return Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / DAY);
+}
+
+function demoWhen(d) {
+  if (!d.date) return d.dateText ?? "";
+  const t = new Date(d.date), diff = dayDiff(t);
+  const hm = t.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+  const day = t.toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: t.getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
+  if (d.comingSoon) return diff <= 0 ? "bugün " + hm : diff === 1 ? "yarın " + hm : day + " " + hm;
+  return diff === 0 ? "bugün" : diff === -1 ? "dün" : diff > -7 ? -diff + " gün önce" : day;
+}
+
+function demoGroup(d) {
+  if (!d.date) return d.comingSoon ? "Tarihi kesinleşmemiş" : "Daha önce";
+  const diff = dayDiff(d.date);
+  if (diff === 0) return "Bugün";
+  if (diff === 1) return "Yarın";
+  if (diff === -1) return "Dün";
+  if (Math.abs(diff) < 7) return diff > 0 ? "Bu hafta" : "Son bir hafta";
+  if (diff < 0) return "Daha önce";
+  if (diff < 31) return "Önümüzdeki haftalar";
+  return new Date(d.date).toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+}
+
+function onDemosPage(visible) {
+  if (!visible || demosVisited) return;
+  demosVisited = true;
+  call("demos.watched").then((w) => { demoWatch = w; demoPlayers = w.players; }).finally(() => loadDemos());
+}
+
+async function loadDemos({ more = false, refresh = false } = {}) {
+  if (demoList === "watch") return refreshDemoWatch();
+  // Each tab loads on its own; switching tabs mid-load must not leave the other one empty.
+  const list = demoList, players = demoPlayers, key = demoKey();
+  const cur = demoLists[key];
+  if (cur?.loading || cur?.loadingMore || (cur && !more && !refresh && !cur.error)) return renderDemos();
+  if (more) cur.loadingMore = true;
+  else demoLists[key] = { items: [], total: 0, loading: true };
+  renderDemos();
+  const start = more ? cur.items.length : 0;
+  try {
+    const r = await call("demos.list", { list, players, start, refresh });
+    demoWatch = r.watched;
+    const prev = more ? cur.items : [];
+    const seen = new Set(prev.map((d) => d.id));
+    demoLists[key] = { items: [...prev, ...r.page.items.filter((d) => !seen.has(d.id))], total: r.page.total };
+  } catch (e) {
+    demoLists[key] = more ? { ...cur, loadingMore: false, error: e.message } : { items: [], total: 0, error: e.message };
+  } finally {
+    if (key === demoKey()) renderDemos();
+  }
+}
+
+async function refreshDemoWatch() {
+  try {
+    demoWatch = await call("demos.watched");
+    renderDemos();
+  } catch { /* shown next time the page loads */ }
+}
+
+function currentDemos() {
+  if (demoList !== "watch") return demoLists[demoKey()]?.items ?? [];
+  return demoWatch.watch
+    .map((w) => ({ ...w.demo, comingSoon: !w.released, released: w.released }))
+    .filter((d) => demoPlayers === "all" || PLAYER_MATCH[demoPlayers](d.players ?? []))
+    .sort((a, b) => (b.released - a.released) || (new Date(a.date ?? 8.64e15) - new Date(b.date ?? 8.64e15)));
+}
+
+function demoMatches(d) {
+  if (demoFilters.has("tr") && !d.turkish) return false;
+  if (demoFilters.has("deck") && d.deck < 2) return false;
+  for (const f of demoFilters) if (f !== "tr" && f !== "deck" && !d.tags.includes(f)) return false;
+  if (!demoQuery) return true;
+  const hay = [d.name, d.description ?? "", ...d.tags].join(" ").toLocaleLowerCase("tr");
+  return demoQuery.split(/\s+/).every((w) => hay.includes(w));
+}
+
+function renderDemoFilters(items) {
+  const count = new Map();
+  for (const d of items) for (const t of d.tags) count.set(t, (count.get(t) ?? 0) + 1);
+  const tags = [...count].filter(([, n]) => n > 1).sort((a, b) => b[1] - a[1]).slice(0, 9).map(([t]) => t);
+  for (const f of demoFilters) if (f !== "tr" && f !== "deck" && !tags.includes(f)) tags.push(f);
+  const chip = (key, label) => {
+    const c = document.createElement("button");
+    c.className = "chip" + (demoFilters.has(key) ? " selected" : "");
+    c.textContent = label;
+    c.addEventListener("click", () => {
+      demoFilters.has(key) ? demoFilters.delete(key) : demoFilters.add(key);
+      renderDemos();
+    });
+    return c;
+  };
+  $("demo-filters").replaceChildren(chip("tr", "Türkçe"), chip("deck", "Steam Deck'te oynanır"), ...tags.map((t) => chip(t, t)));
+}
+
+function renderDemos() {
+  document.querySelectorAll("#demo-tabs button").forEach((b) => b.classList.toggle("on", b.dataset.list === demoList));
+  $("demo-watch-count").textContent = demoWatch.watch.length ? demoWatch.watch.length : "";
+  const grid = $("demo-grid");
+  const data = demoList === "watch" ? null : demoLists[demoKey()];
+  document.querySelectorAll("#demo-players button").forEach((b) => b.classList.toggle("on", b.dataset.players === demoPlayers));
+  const all = currentDemos();
+  renderDemoFilters(all);
+  $("demo-refresh").disabled = !data || data.loading || data.loadingMore;
+
+  const msg = (text) => grid.replaceChildren(Object.assign(document.createElement("div"), { className: "empty", textContent: text }));
+  if (data?.loading) msg("Steam'den demolar alınıyor…");
+  else if (data?.error && !all.length) msg("Steam'e ulaşılamadı: " + data.error);
+  else if (demoList === "watch" && !demoWatch.watch.length) msg("Henüz takip ettiğin demo yok. \"Yakında\" sekmesinde beğendiğin demonun yıldızına bas; açılınca haber veririz.");
+  else {
+    const shown = all.filter(demoMatches);
+    if (!shown.length) msg("Bu filtreye uyan demo yok.");
+    else {
+      const grouped = demoList === "new" || demoList === "soon";
+      const out = [];
+      let group = null;
+      for (const d of shown) {
+        const g = demoList === "watch" ? (d.released ? "Çıktı, oynanabilir" : "Bekleniyor") : grouped ? demoGroup(d) : null;
+        if (g && g !== group) {
+          group = g;
+          out.push(Object.assign(document.createElement("div"), { className: "demo-group", textContent: g }));
+        }
+        out.push(demoCard(d));
+      }
+      grid.replaceChildren(...out);
+    }
+  }
+
+  const row = $("demo-more-row");
+  row.hidden = !data || data.loading || !data.items.length;
+  if (data && !data.loading) {
+    $("demo-count").textContent = data.error ? "Yüklenemedi: " + data.error
+      : `${data.items.length.toLocaleString("tr-TR")} / ${data.total.toLocaleString("tr-TR")} demo gösteriliyor`;
+    $("demo-more").hidden = data.items.length >= data.total;
+    $("demo-more").disabled = !!data.loadingMore;
+    $("demo-more").textContent = data.loadingMore ? "Yükleniyor…" : "Daha fazla göster";
+  }
+}
+
+function demoCard(d) {
+  const watched = demoWatch.watch.some((w) => w.demo.id === d.id);
+  const playable = !d.comingSoon || d.released;
+  const card = document.createElement("div");
+  card.className = "demo-card" + (playable ? "" : " upcoming") + (d.released ? " released" : "");
+  card.innerHTML = `<button class="demo-img"><span class="demo-when"></span></button>
+    <div class="demo-body">
+      <div class="demo-name"></div>
+      <div class="demo-desc"></div>
+      <div class="demo-tags"></div>
+      <div class="demo-foot"><div class="demo-badges"></div><button class="demo-star"></button><button class="btn small demo-act"></button></div>
+    </div>`;
+  const img = card.querySelector(".demo-img");
+  if (d.image) {
+    const i = document.createElement("img");
+    i.loading = "lazy";
+    i.alt = "";
+    i.src = d.image;
+    i.addEventListener("error", () => i.remove());
+    img.prepend(i);
+  }
+  img.title = "Mağaza sayfasını aç";
+  img.addEventListener("click", () => call("app.open", { url: d.url }));
+  const when = card.querySelector(".demo-when");
+  when.textContent = d.released ? "çıktı" : demoWhen(d);
+  when.hidden = !when.textContent;
+  card.querySelector(".demo-name").textContent = d.name;
+  card.querySelector(".demo-name").title = d.name;
+  card.querySelector(".demo-desc").textContent = d.description ?? "";
+  card.querySelector(".demo-tags").textContent = d.tags.join(" · ");
+
+  const badges = card.querySelector(".demo-badges");
+  const badge = (text, cls, title) => {
+    const b = document.createElement("span");
+    b.className = "badge " + cls;
+    b.textContent = text;
+    if (title) b.title = title;
+    badges.append(b);
+  };
+  for (const p of d.players ?? []) badge(p, "coop");
+  if (d.turkish) badge("Türkçe", "good");
+  if (d.deck === 3) badge("Deck ✓", "me", "Steam Deck: Doğrulandı");
+  else if (d.deck === 2) badge("Deck", "", "Steam Deck: Oynanabilir");
+  if (d.reviews > 0) badge("%" + d.reviewPercent, d.reviewPercent >= 80 ? "good" : "", `${d.reviewLabel ?? ""} · ${d.reviews.toLocaleString("tr-TR")} inceleme`);
+  if (d.gameDate && playable && /\d/.test(d.gameDate)) badge("Oyun: " + d.gameDate, "", "Tam oyunun çıkış tarihi");
+
+  const star = card.querySelector(".demo-star");
+  // Watching only makes sense for demos that aren't out yet; the watch list can always remove.
+  star.hidden = playable && !watched;
+  star.classList.toggle("on", watched);
+  star.textContent = watched ? "★" : "☆";
+  star.title = watched ? "Takibi bırak" : "Takip et: demo açılınca haber ver";
+  star.addEventListener("click", async () => {
+    try {
+      demoWatch = await call("demos.watch", { demo: d, on: !watched });
+      renderDemos();
+      if (!watched) toast(`${d.name} takipte. Demo açılınca bildirim gelecek.`, "ok");
+    } catch (e) {
+      toast(e.message, "error");
+    }
+  });
+
+  const act = card.querySelector(".demo-act");
+  if (playable && demoWatch.steam) {
+    act.textContent = "Yükle";
+    act.title = "Steam'de demoyu yükle";
+    act.addEventListener("click", () => call("demos.install", { id: d.id }).catch((e) => toast(e.message, "error")));
+  } else {
+    act.textContent = playable ? "Steam'de aç" : "Mağaza";
+    act.addEventListener("click", () => call("app.open", { url: d.url }));
+  }
+  return card;
+}
+
+document.querySelectorAll("#demo-tabs button").forEach((b) =>
+  b.addEventListener("click", () => {
+    demoList = b.dataset.list;
+    $("page-demos").scrollIntoView();
+    loadDemos();
+  }));
+document.querySelectorAll("#demo-players button").forEach((b) =>
+  b.addEventListener("click", () => {
+    demoPlayers = b.dataset.players;
+    call("demos.players", { players: demoPlayers });
+    loadDemos();
+  }));
+$("demo-more").addEventListener("click", () => loadDemos({ more: true }));
+$("demo-refresh").addEventListener("click", () => loadDemos({ refresh: true }));
+$("demo-search").addEventListener("input", (e) => {
+  demoQuery = e.target.value.trim().toLocaleLowerCase("tr");
+  renderDemos();
+});
+
+// ---- Bedava ----
+let freeVisited = false;
+
+function onFreePage(visible) {
+  if (!visible || freeVisited) return;
+  freeVisited = true;
+  loadFree();
+}
+
+async function loadFree(refresh = false) {
+  const btn = $("free-refresh");
+  btn.disabled = true;
+  try {
+    renderFree(await call("free.list", { refresh }));
+  } catch (e) {
+    $("free-now").innerHTML = "";
+    $("free-now").append(Object.assign(document.createElement("div"), { className: "empty", textContent: "Yüklenemedi: " + e.message }));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function freeLeft(end) {
+  const ms = new Date(end) - Date.now();
+  if (ms <= 0) return "bitti";
+  const d = Math.floor(ms / DAY), h = Math.floor((ms % DAY) / 3600000);
+  return d > 0 ? `${d} gün ${h} sa kaldı` : h > 0 ? `${h} sa kaldı` : "son dakikalar";
+}
+
+function renderFree(r) {
+  $("free-notify").checked = r.notify;
+  const now = r.games.filter((g) => !g.upcoming), next = r.games.filter((g) => g.upcoming);
+  $("free-sub").textContent = (r.errors.length ? r.errors.join(" · ") + " · " : "") +
+    "son bakış " + new Date(r.at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+  const empty = (text) => Object.assign(document.createElement("div"), { className: "empty", textContent: text });
+  $("free-now").replaceChildren(...(now.length ? now.map(freeCard) : [empty("Şu an bedava verilen oyun yok.")]));
+  $("free-next-title").hidden = $("free-next").hidden = !next.length;
+  $("free-next").replaceChildren(...next.map(freeCard));
+}
+
+function freeCard(g) {
+  const card = document.createElement("div");
+  card.className = "demo-card" + (g.upcoming ? " upcoming" : " free");
+  card.innerHTML = `<button class="demo-img"><span class="demo-when"></span><span class="free-store"></span></button>
+    <div class="demo-body">
+      <div class="demo-name"></div>
+      <div class="demo-desc"></div>
+      <div class="demo-foot"><div class="demo-badges"></div><button class="btn small demo-act"></button></div>
+    </div>`;
+  const img = card.querySelector(".demo-img");
+  if (g.image) {
+    const i = document.createElement("img");
+    i.loading = "lazy";
+    i.alt = "";
+    i.src = g.image;
+    i.addEventListener("error", () => i.remove());
+    img.prepend(i);
+  }
+  img.addEventListener("click", () => call("app.open", { url: g.url }));
+  const store = card.querySelector(".free-store");
+  store.textContent = g.store;
+  store.dataset.store = g.store.toLowerCase();
+  const when = card.querySelector(".demo-when");
+  if (g.upcoming) when.textContent = demoWhen({ date: g.start, comingSoon: true });
+  else if (g.end) {
+    when.textContent = freeLeft(g.end);
+    when.title = new Date(g.end).toLocaleString("tr-TR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) + " saatine kadar";
+  }
+  when.hidden = !when.textContent;
+  card.querySelector(".demo-name").textContent = g.title;
+  card.querySelector(".demo-name").title = g.title;
+  card.querySelector(".demo-desc").textContent = g.description ?? "";
+
+  const badges = card.querySelector(".demo-badges");
+  const badge = (text, cls, title) => {
+    const b = document.createElement("span");
+    b.className = "badge " + cls;
+    b.textContent = text;
+    if (title) b.title = title;
+    badges.append(b);
+  };
+  if (g.originalPrice) badge(g.originalPrice, "price", "Normal fiyatı");
+  if (g.dlcFor != null) badge("DLC", "new", g.dlcFor ? `Oynamak için ${g.dlcFor} gerekir` : "Ana oyun gerekir");
+  for (const p of g.players) badge(p, "coop");
+
+  const act = card.querySelector(".demo-act");
+  act.textContent = g.upcoming ? "Mağaza" : "Mağazada al";
+  act.addEventListener("click", () => call("app.open", { url: g.url }));
+  return card;
+}
+
+$("free-refresh").addEventListener("click", () => loadFree(true));
+$("free-notify").addEventListener("change", (e) => call("free.notify", { on: e.target.checked }));
 
 function toast(message, level = "info") {
   const el = document.createElement("div");

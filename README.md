@@ -12,6 +12,8 @@ PC'yi açar açmaz açılan, interneti ve bilgisayarı en iyi şekilde kullandı
 | **Ağım**: modeme bağlı cihazlar (üretici, model, ad), yeni cihaz bildirimi | ✅ v0.6 |
 | **Açılış**: başlangıç programları ve açılışa etkileri, açılış süresi ölçümü | ✅ v0.6 |
 | **Güncelleme**: GitHub'dan yeni sürüm denetimi, uygulama içinden tek tıkla kurulum | ✅ v0.6 |
+| **Demolar**: Steam'in yeni, yaklaşan ve popüler demoları; co-op filtresi, takip edilen demo çıkınca bildirim | ✅ v0.7 |
+| **Bedava**: Epic ve Steam'de alınca hesapta kalan bedava oyunlar, yeni bedava oyun bildirimi | ✅ v0.7 |
 
 ## İndir
 
@@ -134,6 +136,14 @@ Bu bağlantıda ölçülenler (2026-10-26, Ethernet): Cloudflare'e 53 ms, modeme
 - Test için geliştirme sürümünde `GECIT_UPDATE_URL` ortam değişkeni sahte bir sürüm adresine yönlendirir. 2026-10-26'da şu testler yapıldı:
   - Kurcalanmış özet reddedildi, kurulum çalışmadı.
   - Gerçek güncelleme 14 saniye sürdü. Hizmetler yeniden başladı ve Geçit yöneticisiz olarak yeniden açıldı.
+
+### Demolar ve Bedava
+
+- Hiçbir API anahtarı ya da hesap gerekmez; Steam ve Epic'in herkese açık mağaza verileri kullanılır (`src/Gecit/Store`).
+- Demolar: sıra Steam mağaza aramasından gelir (`category1=10`; yeni = `sort_by=Released_DESC`, yaklaşan = `filter=comingsoon`, oyuncu filtresi = `category3`: 9 co-op, 38 online co-op, 1 çok oyunculu). Ayrıntılar (resim, Türkçe etiketler, Türkçe dil desteği, Steam Deck uyumu, çıkış tarihi) `IStoreBrowseService/GetItems` ile hem demodan hem de ana oyundan alınır.
+- Takip edilen demolara 2 saatte bir, duyurulan saati geçmiş bir demo varsa 10 dakikada bir bakılır. Geliştirici tarihi değiştirirse kayıtlı tarih de güncellenir.
+- Bedava: Epic'in `freeGamesPromotions` verisinde fiyatı %0'a inen kampanyalar (şimdiki ve gelecek hafta). Steam'de ise indirimdekiler fiyata göre sıralanıp `best_purchase_option.is_free_to_keep` olanlar alınır. Free-to-play oyunlar ve hafta sonu bedava etkinlikleri kalıcı olmadığı için listede yoktur.
+- Yeni bedava oyun için bildirim 3 saatte bir, bir kampanya başlayıp biterken ise 10 dakikada bir kontrol edilir. DLC'ler için bildirim gösterilmez.
 
 ## Üçüncü taraf dosyalar
 

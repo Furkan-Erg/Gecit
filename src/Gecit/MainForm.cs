@@ -531,6 +531,10 @@ sealed partial class MainForm : Form
             case var c when c.StartsWith("update.", StringComparison.Ordinal) || c.StartsWith("lan.", StringComparison.Ordinal)
                             || c.StartsWith("boot.", StringComparison.Ordinal):
                 return await HandleToolsAsync(cmd, args);
+            case var c when c.StartsWith("demos.", StringComparison.Ordinal):
+                return await HandleDemosAsync(cmd, args);
+            case var c when c.StartsWith("free.", StringComparison.Ordinal):
+                return await HandleFreeAsync(cmd, args);
             case "net.ping":
                 ping.KeepAlive();
                 var (inet, gw) = ping.Snapshot();

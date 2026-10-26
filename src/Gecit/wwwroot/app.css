@@ -472,6 +472,54 @@ div.boot-icon { background: rgba(255, 255, 255, .05); border: 1px solid var(--li
 .impact.low { color: var(--green); }
 .impact.none, .impact.unknown { color: var(--muted); font-weight: 400; }
 
+/* ---- Demolar ---- */
+.demo-bar { margin-top: 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.demo-bar .seg button { padding: 7px 14px; }
+.demo-bar .btn.small { margin-left: 0; }
+.seg-count { margin-left: 6px; font: 600 10.5px var(--mono); color: var(--magenta); }
+.seg-count:empty { display: none; }
+.demo-search { flex: 1; min-width: 180px; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--line-2); background: #0c0a1a; color: var(--text); font: 13px var(--sans); outline: none; }
+.demo-search:focus { border-color: rgba(0, 240, 255, .5); }
+.demo-row2 { display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; }
+.demo-row2 .seg { flex: none; }
+.demo-row2 .seg button { padding: 5px 12px; }
+#demo-players button.on { color: var(--text); background: rgba(255, 42, 170, .16); }
+.demo-filters { justify-content: flex-start; }
+.badge.coop { color: #ff8fd0; border-color: rgba(255, 42, 170, .35); }
+.demo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-top: 8px; }
+.demo-grid > .empty { grid-column: 1 / -1; padding: 24px 2px; }
+.demo-group { grid-column: 1 / -1; margin: 18px 0 -2px; font: 600 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.demo-card { display: flex; flex-direction: column; min-width: 0; border-radius: 12px; overflow: hidden; background: var(--panel); border: 1px solid var(--line); transition: border-color .15s, transform .15s; }
+.demo-card:hover { border-color: var(--line-2); transform: translateY(-2px); }
+.demo-card.released { border-color: rgba(61, 255, 162, .35); }
+.demo-img { position: relative; display: block; width: 100%; aspect-ratio: 460 / 215; padding: 0; border: 0; cursor: pointer; background: linear-gradient(135deg, #1d1940, #0d0a1d); }
+.demo-img img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; }
+.demo-when { position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; border-radius: 6px; font: 600 11px var(--mono); background: rgba(10, 8, 20, .85); color: var(--text); border: 1px solid var(--line-2); }
+.demo-card.upcoming .demo-when { color: var(--amber); border-color: rgba(255, 181, 71, .45); }
+.demo-card.released .demo-when { color: var(--green); border-color: rgba(61, 255, 162, .45); }
+.demo-body { flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 12px; min-width: 0; }
+.demo-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.demo-desc { font-size: 12px; color: var(--muted); line-height: 1.4; height: calc(2 * 1.4em); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.demo-tags { font: 11px var(--mono); color: #6f6a90; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.demo-foot { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 8px; }
+.demo-badges { flex: 1; display: flex; gap: 5px; flex-wrap: wrap; min-width: 0; }
+.demo-badges .badge { white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.demo-foot .btn.small { margin-left: 0; flex: none; }
+.demo-star { flex: none; width: 30px; height: 28px; border-radius: 8px; border: 1px solid var(--line-2); background: none; color: var(--muted); cursor: pointer; font-size: 15px; line-height: 1; }
+.demo-star:hover { color: var(--amber); border-color: rgba(255, 181, 71, .45); }
+.demo-star.on { color: var(--amber); border-color: rgba(255, 181, 71, .45); background: rgba(255, 181, 71, .1); }
+.demo-more { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
+
+/* ---- Bedava ---- */
+.free-notify { margin-top: 24px; }
+#page-free .section-title .btn.small { margin-left: auto; }
+.free-store { position: absolute; right: 8px; top: 8px; padding: 1px 8px; border-radius: 6px; font: 700 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; background: rgba(10, 8, 20, .85); border: 1px solid var(--line-2); color: var(--text); }
+.free-store[data-store="epic"] { color: #e8e8e8; }
+.free-store[data-store="steam"] { color: #66c0f4; border-color: rgba(102, 192, 244, .45); }
+.demo-card.free { border-color: rgba(61, 255, 162, .3); }
+.demo-card.free .demo-when { color: var(--green); border-color: rgba(61, 255, 162, .45); }
+.badge.price { text-decoration: line-through; }
+
 /* ---- Coming soon ---- */
 .soon-card { margin-top: 24px; position: relative; }
 .soon-badge { display: inline-block; font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--magenta); border: 1px solid rgba(255, 42, 170, .4); border-radius: 6px; padding: 2px 10px; }

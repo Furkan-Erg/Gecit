@@ -1,10 +1,15 @@
+using System.Diagnostics;
+using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Gecit.Boot;
 using Gecit.Net;
+using Gecit.Store;
+using Microsoft.Win32;
 
 namespace Gecit;
 
-// Güncelleme, Ağım and Açılış.
+// Güncelleme, Ağım, Açılış, Demolar and Bedava.
 sealed partial class MainForm
 {
     readonly LanService lan = new();
@@ -39,11 +44,23 @@ sealed partial class MainForm
                 await CheckUpdateAsync(manual: false);
             if (settings.LanWatch && slowTicks % 10 == 0)
                 await WatchLanAsync();
+            // Every 2 hours; every 10 minutes once a watched demo's announced time has come.
+            bool due = settings.DemoWatch.Any(w => !w.Released && w.Demo.Date <= DateTimeOffset.Now);
+            if (slowTicks % (due ? 10 : 120) == 0)
+                await CheckDemoWatchAsync();
+            // Every 3 hours, and soon after a giveaway is due to start or end (Epic's weekly switch).
+            if (slowTicks % 180 == 0 || (slowTicks % 10 == 0 && FreeGames.NextChange <= DateTimeOffset.Now))
+                await CheckFreeGamesAsync();
         };
         slow.Start();
         // Not right at logon: the PC is busy and the network may not be up yet.
         _ = Task.Delay(TimeSpan.FromSeconds(BootMeter.JustLoggedOn ? 90 : 10)).ContinueWith(
-            _ => BeginInvoke(async () => { if (settings.UpdateCheck) await CheckUpdateAsync(manual: false); }));
+            _ => BeginInvoke(async () =>
+            {
+                if (settings.UpdateCheck) await CheckUpdateAsync(manual: false);
+                await CheckDemoWatchAsync();
+                await CheckFreeGamesAsync();
+            }));
     }
 
     string? pendingToast;
@@ -182,6 +199,130 @@ sealed partial class MainForm
             scheduled = BootMeter.MeasureScheduled,
             autostart = Autostart.IsEnabled,
         };
+    }
+
+    // ---- Demolar ----
+
+    static bool SteamInstalled => Registry.ClassesRoot.OpenSubKey(@"steam\shell\open\command") is not null;
+
+    async Task CheckDemoWatchAsync()
+    {
+        var waiting = settings.DemoWatch.Where(w => !w.Released).ToList();
+        if (waiting.Count == 0)
+            return;
+        Dictionary<int, DemoStatus> fresh;
+        try
+        {
+            fresh = await DemoFeed.StatusAsync(waiting.Select(w => w.Demo.Id));
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or JsonException) { return; }
+        var now = new List<WatchedDemo>();
+        foreach (var w in waiting)
+        {
+            if (!fresh.TryGetValue(w.Demo.Id, out var s))
+                continue;
+            // Keep the shown date current, and stop the 10-minute checks for a date that slipped.
+            w.Demo = w.Demo with { ComingSoon = s.ComingSoon, Date = s.Date, DateText = s.DateText };
+            if (!s.ComingSoon)
+            {
+                w.Released = true;
+                now.Add(w);
+            }
+        }
+        settings.Save();
+        Post(new { @event = "demos" });
+        if (now.Count == 0)
+            return;
+        tray.ShowBalloonTip(8000,
+            now.Count == 1 ? $"{now[0].Demo.Name} demosu çıktı" : $"Takip ettiğin {now.Count} demo çıktı",
+            now.Count == 1 ? "Steam'de ücretsiz oynayabilirsin. Geçit → Demolar'dan açabilirsin." : string.Join(", ", now.Select(w => w.Demo.Name)),
+            ToolTipIcon.Info);
+    }
+
+    object DemoWatchState() => new
+    {
+        steam = SteamInstalled,
+        players = settings.DemoPlayers,
+        watch =settings.DemoWatch.Select(w => new { w.Demo, w.Released }),
+    };
+
+    // ---- Bedava ----
+
+    async Task CheckFreeGamesAsync()
+    {
+        var (games, _, _) = await FreeGames.GetAsync(refresh: true);
+        Post(new { @event = "free" });
+        if (!settings.FreeNotify)
+            return;
+        // Games only: a free DLC for a game you don't own is noise.
+        var fresh = games.Where(g => !g.Upcoming && g.DlcFor is null && !settings.FreeSeen.Contains(g.Id)).ToList();
+        if (fresh.Count == 0)
+            return;
+        settings.FreeSeen.AddRange(fresh.Select(g => g.Id));
+        if (settings.FreeSeen.Count > 300)
+            settings.FreeSeen.RemoveRange(0, settings.FreeSeen.Count - 300);
+        settings.Save();
+        var g0 = fresh[0];
+        tray.ShowBalloonTip(8000,
+            fresh.Count == 1 ? $"Bedava oyun: {g0.Title}" : $"{fresh.Count} oyun bedava",
+            fresh.Count == 1
+                ? $"{(g0.Store == "Epic" ? "Epic'te" : "Steam'de")}{(g0.End is { } end ? " " + end.ToLocalTime().ToString("d MMMM HH:mm", CultureInfo.GetCultureInfo("tr-TR")) + " saatine kadar" : "")} ücretsiz. Alırsan hesabında kalır."
+                : string.Join(", ", fresh.Select(g => $"{g.Title} ({g.Store})")),
+            ToolTipIcon.Info);
+    }
+
+    async Task<object?> HandleFreeAsync(string cmd, JsonNode? args)
+    {
+        switch (cmd)
+        {
+            case "free.list":
+                var (games, errors, at) = await FreeGames.GetAsync(args?["refresh"]?.GetValue<bool>() ?? false);
+                return new { games, errors, at, notify = settings.FreeNotify };
+            case "free.notify":
+                settings.FreeNotify = args!["on"]!.GetValue<bool>();
+                settings.Save();
+                return null;
+            default:
+                throw new InvalidOperationException($"Bilinmeyen komut: {cmd}");
+        }
+    }
+
+    async Task<object?> HandleDemosAsync(string cmd, JsonNode? args)
+    {
+        switch (cmd)
+        {
+            case "demos.list":
+                var page = await DemoFeed.GetAsync(args!["list"]!.GetValue<string>(), args["players"]?.GetValue<string>() ?? "all",
+                    args["start"]?.GetValue<int>() ?? 0, args["refresh"]?.GetValue<bool>() ?? false);
+                return new { page, watched = DemoWatchState() };
+            case "demos.players":
+                // Remembered: people tend to always look for the same kind (e.g. co-op with friends).
+                string players = args!["players"]!.GetValue<string>();
+                if (DemoFeed.PlayerFilters.ContainsKey(players))
+                {
+                    settings.DemoPlayers = players;
+                    settings.Save();
+                }
+                return null;
+            case "demos.watched":
+                return DemoWatchState();
+            case "demos.watch":
+                var demo = args!["demo"].Deserialize<Demo>(Json) ?? throw new InvalidOperationException("Demo yok.");
+                settings.DemoWatch.RemoveAll(w => w.Demo.Id == demo.Id);
+                if (args["on"]!.GetValue<bool>())
+                    settings.DemoWatch.Add(new WatchedDemo { Demo = demo, Released = !demo.ComingSoon });
+                settings.Save();
+                return DemoWatchState();
+            case "demos.install":
+                // Only a number goes into the URL; Steam asks before installing anything.
+                int id = args!["id"]!.GetValue<int>();
+                if (!SteamInstalled)
+                    throw new InvalidOperationException("Steam bu bilgisayarda kurulu değil.");
+                Process.Start(new ProcessStartInfo($"steam://install/{id}") { UseShellExecute = true })?.Dispose();
+                return null;
+            default:
+                throw new InvalidOperationException($"Bilinmeyen komut: {cmd}");
+        }
     }
 
     async Task<object?> HandleToolsAsync(string cmd, JsonNode? args)
