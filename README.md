@@ -10,6 +10,14 @@ PC'yi açar açmaz açılan, interneti ve bilgisayarı en iyi şekilde kullandı
 | **Oyun Modu**: arka plan uygulamalarını dondurur, güç planı, öncelik | ✅ v0.4 |
 | **İnternet**: canlı ping/jitter, hız testi, uygulama başına trafik | ✅ v0.5 |
 
+## İndir
+
+[**Releases**](../../releases/latest) sayfasından `Gecit-Setup-<sürüm>.exe` dosyasını indirip çalıştırın. Windows 10 (1809+) veya 11, 64 bit gerekir; .NET kurmaya gerek yoktur.
+
+- Paketin kod imzası olmadığı için Windows "Bilgisayarınız korundu" diyebilir: **Ek bilgi → Yine de çalıştır**.
+- Bazı antivirüsler (ör. Kaspersky) GoodbyeDPI'ın kullandığı WinDivert sürücüsünü engelleyebilir. Sürücü imzalı ve açık kaynaklıdır; aşağıda doğrulama notları var.
+- Kaldırmak için: Ayarlar → Uygulamalar → Geçit. DNS ayarları eski haline döner, hizmetler ve sürücü silinir.
+
 ## Derleme
 
 Gereksinimler: .NET 10 SDK, WebView2 Runtime (Windows 10/11'de genelde kurulu).
@@ -107,6 +115,10 @@ Bu bağlantıda ölçülenler (2026-10-26, Ethernet): Cloudflare'e 53 ms, modeme
 WinDivert 2.2.2 Windows Defender tarafından `Misleading:Win32/Malgent!AMTB` olarak işaretleniyor, 2.2.0 işaretlenmiyor. Bu yüzden 2.2.0 kullanılıyor.
 
 Lisanslar `third_party/goodbyedpi/licenses/` içinde: GoodbyeDPI Apache 2.0, WinDivert LGPLv3.
+
+## Lisans
+
+Geçit'in kendi kodu [GPL-3.0](LICENSE) lisanslıdır. Üçüncü taraf dosyalar kendi lisanslarıyla gelir (yukarıda).
 
 ## Uyarı
 
