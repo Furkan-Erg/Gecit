@@ -92,6 +92,7 @@ sealed class BrowserForm : Form
         core.Settings.IsZoomControlEnabled = false;
         core.SetVirtualHostNameToFolderMapping("gecit.example", AppPaths.WebRoot, CoreWebView2HostResourceAccessKind.DenyCors);
         core.WebMessageReceived += OnToolbarMessage;
+        HookShortcuts(toolbar);
         // Same reason as the main window: never show a cached toolbar from an older version.
         await core.Profile.ClearBrowsingDataAsync(CoreWebView2BrowsingDataKinds.DiskCache);
         core.Navigate(AppOrigin + "browser/chrome.html");
@@ -124,6 +125,7 @@ sealed class BrowserForm : Form
         var tab = new BrowserTab(nextId++, view);
         tabs.Add(tab);
         Wire(tab);
+        HookShortcuts(view);
         if (navigate)
             tab.Core.Navigate(url ?? NewTabUrl);
         Activate(tab);
@@ -362,23 +364,40 @@ sealed class BrowserForm : Form
         toolbar.CoreWebView2?.PostWebMessageAsJson("""{"focusAddress":true}""");
     }
 
-    // Content WebView2s forward accelerator keys here.
-    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
-    {
-        switch (keyData)
+    // Shortcuts reach us two ways: ProcessCmdKey while a plain WinForms control has focus, and KeyDown
+    // on a WebView2 while a page (or the toolbar) has it. The WinForms WebView2 turns the page's
+    // AcceleratorKeyPressed into KeyDown only; it never calls ProcessCmdKey.
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData) =>
+        HandleShortcut(keyData) || base.ProcessCmdKey(ref msg, keyData);
+
+    void HookShortcuts(WebView2 view) =>
+        view.KeyDown += (_, e) =>
         {
-            case Keys.Control | Keys.T: NewTabAndFocusAddress(); return true;
-            case Keys.Control | Keys.W: if (active is not null) CloseTab(active); return true;
-            case (Keys.Control | Keys.L) or (Keys.Alt | Keys.D) or Keys.F6: FocusAddress(); return true;
-            case Keys.Control | Keys.Tab: CycleTab(+1); return true;
-            case Keys.Control | Keys.Shift | Keys.Tab: CycleTab(-1); return true;
-            case Keys.F5 or (Keys.Control | Keys.R): active?.Core.Reload(); return true;
-            case Keys.Alt | Keys.Left: if (active?.Core.CanGoBack == true) active.Core.GoBack(); return true;
-            case Keys.Alt | Keys.Right: if (active?.Core.CanGoForward == true) active.Core.GoForward(); return true;
-            case Keys.Control | Keys.Shift | Keys.Delete: _ = ClearAllAsync(); return true;
-            case Keys.F11: SetFullscreen(!fullscreen); return true;
-        }
-        return base.ProcessCmdKey(ref msg, keyData);
+            if (HandleShortcut(e.KeyData))
+                e.Handled = true;
+        };
+
+    bool HandleShortcut(Keys keyData)
+    {
+        Action? action = keyData switch
+        {
+            Keys.Control | Keys.T => NewTabAndFocusAddress,
+            Keys.Control | Keys.W => () => { if (active is not null) CloseTab(active); },
+            (Keys.Control | Keys.L) or (Keys.Alt | Keys.D) or Keys.F6 => FocusAddress,
+            Keys.Control | Keys.Tab => () => CycleTab(+1),
+            Keys.Control | Keys.Shift | Keys.Tab => () => CycleTab(-1),
+            Keys.F5 or (Keys.Control | Keys.R) => () => active?.Core.Reload(),
+            Keys.Alt | Keys.Left => () => { if (active?.Core.CanGoBack == true) active.Core.GoBack(); },
+            Keys.Alt | Keys.Right => () => { if (active?.Core.CanGoForward == true) active.Core.GoForward(); },
+            Keys.Control | Keys.Shift | Keys.Delete => () => _ = ClearAllAsync(),
+            Keys.F11 => () => SetFullscreen(!fullscreen),
+            _ => null,
+        };
+        if (action is null)
+            return false;
+        // Run after the key event returns: Ctrl+W would otherwise dispose a WebView2 inside its own event.
+        BeginInvoke(action);
+        return true;
     }
 
     protected override void OnFormClosed(FormClosedEventArgs e)

@@ -99,25 +99,7 @@ $("home").addEventListener("click", () => send("home"));
 $("newtab").addEventListener("click", () => send("new"));
 $("clear").addEventListener("click", () => send("clear"));
 
-// Shortcuts while the toolbar itself has focus (the page's own keys go through the host).
-document.addEventListener("keydown", (e) => {
-  const ctrl = e.ctrlKey && !e.altKey;
-  const k = e.key.toLowerCase();
-  let handled = true;
-  if (ctrl && k === "t") send("new");
-  else if (ctrl && k === "w") send("close", { id: state?.activeId });
-  else if ((ctrl && k === "l") || e.key === "F6") { address.focus(); address.select(); }
-  else if (e.key === "F5" || (ctrl && k === "r")) send("reload");
-  else if (ctrl && e.key === "Tab") cycle(e.shiftKey ? -1 : 1);
-  else if (ctrl && e.shiftKey && e.key === "Delete") send("clear");
-  else handled = false;
-  if (handled) e.preventDefault();
-});
-
-function cycle(delta) {
-  if (!state || state.tabs.length < 2) return;
-  const i = state.tabs.findIndex((t) => t.id === state.activeId);
-  send("activate", { id: state.tabs[(i + delta + state.tabs.length) % state.tabs.length].id });
-}
+// Keyboard shortcuts (Ctrl+T, Ctrl+W, ...) are handled by the host for both the toolbar and pages,
+// so there is exactly one handler and nothing fires twice.
 
 send("ready");
