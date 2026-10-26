@@ -78,6 +78,7 @@ sealed partial class MainForm : Form
             browser = new BrowserForm(settings, adBlocker, iconOn, url);
             browser.FormClosed += (_, _) => { browser = null; PushState(); };
             browser.Show();
+            browser.Activate();
             PushState();
             return;
         }
@@ -297,6 +298,8 @@ sealed partial class MainForm : Form
         core.Settings.IsStatusBarEnabled = false;
         core.Settings.IsZoomControlEnabled = false;
         core.SetVirtualHostNameToFolderMapping("gecit.example", AppPaths.WebRoot, CoreWebView2HostResourceAccessKind.DenyCors);
+        // The UI is local files; a stale HTTP cache would show the previous version's CSS/JS after an update.
+        await core.Profile.ClearBrowsingDataAsync(CoreWebView2BrowsingDataKinds.DiskCache);
         core.NewWindowRequested += (_, e) =>
         {
             e.Handled = true;

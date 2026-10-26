@@ -25,7 +25,22 @@ static class Program
         }
 
         ApplicationConfiguration.Initialize();
+        // Errors in async event handlers land here; log them instead of killing the tray app.
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+        Application.ThreadException += (_, e) => ReportError(e.Exception, fatal: false);
+        AppDomain.CurrentDomain.UnhandledException += (_, e) => ReportError((Exception)e.ExceptionObject, fatal: true);
         Application.Run(new MainForm(startHidden: args.Contains("--tray") || browserOnly, openBrowser: browserOnly));
         return 0;
+    }
+
+    public static string ErrorLog => Path.Combine(AppPaths.LocalDir, "error.log");
+
+    static void ReportError(Exception e, bool fatal)
+    {
+        try { File.AppendAllText(ErrorLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {(fatal ? "FATAL" : "ERROR")} {e}\n\n"); }
+        catch (IOException) { }
+        if (!fatal)
+            MessageBox.Show($"Beklenmeyen bir hata oldu:\n\n{e.Message}\n\nAyrıntılar: {ErrorLog}", "Geçit",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
     }
 }

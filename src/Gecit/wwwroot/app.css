@@ -117,6 +117,7 @@ a:hover { text-decoration: underline; }
   content: ""; position: absolute; right: -80px; top: -80px; width: 260px; height: 260px; border-radius: 50%;
   background: radial-gradient(circle, rgba(0, 240, 255, .14), transparent 70%);
   opacity: 0; transition: opacity .4s;
+  pointer-events: none;   /* decoration only; it overlaps buttons on the right side of the card */
 }
 .hero[data-state="running"]::after { opacity: 1; }
 

@@ -68,6 +68,20 @@ sealed class BrowserForm : Form
     {
         base.OnShown(e);
         NativeTheme.UseDarkTitleBar(Handle);
+        try
+        {
+            await InitAsync();
+        }
+        catch (Exception ex)
+        {
+            File.AppendAllText(Program.ErrorLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Tarayıcı açılamadı: {ex}\n\n");
+            MessageBox.Show(this, $"Gizli tarayıcı açılamadı:\n\n{ex.Message}", "Geçit", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Close();
+        }
+    }
+
+    async Task InitAsync()
+    {
         env = await CoreWebView2Environment.CreateAsync(null, Path.Combine(AppPaths.LocalDir, "Browser"));
 
         await toolbar.EnsureCoreWebView2Async(env);
@@ -78,6 +92,8 @@ sealed class BrowserForm : Form
         core.Settings.IsZoomControlEnabled = false;
         core.SetVirtualHostNameToFolderMapping("gecit.example", AppPaths.WebRoot, CoreWebView2HostResourceAccessKind.DenyCors);
         core.WebMessageReceived += OnToolbarMessage;
+        // Same reason as the main window: never show a cached toolbar from an older version.
+        await core.Profile.ClearBrowsingDataAsync(CoreWebView2BrowsingDataKinds.DiskCache);
         core.Navigate(AppOrigin + "browser/chrome.html");
 
         await NewTabAsync(initialUrl);
