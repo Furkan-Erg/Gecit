@@ -2,18 +2,113 @@
 
 PC'yi açar açmaz açılan, interneti ve bilgisayarı en iyi şekilde kullandıran hepsi-bir-arada Windows uygulaması.
 
-| Özellik | Durum |
+Discord, Roblox gibi engelli siteleri VPN'siz açar; DNS'i hızlandırıp şifreler, oyun oynarken arka plandaki programları dondurur, internetin ve evdeki ağın durumunu gösterir. Steam'in yeni demolarını ve Epic/Steam'de bedava dağıtılan oyunları da takip eder.
+
+<p align="center">
+  <a href="../../releases/latest"><b>⬇ Geçit'i indir (Windows 10/11)</b></a>
+</p>
+
+## Neler yapar?
+
+### 🛡️ Engel Aşma
+Operatörün engellediği siteleri (Discord, Roblox, Wattpad…) **tek tuşla** açar. VPN değildir: trafik başka bir sunucudan geçmez, internet hızın düşmez. Bir site açılmazsa farklı yöntemleri tek tıkla deneyebilir, "Bağlantı testi" ile hangi sitelerin açıldığını görebilirsin. Pencereyi kapatsan da arka planda çalışır.
+
+![Geçit: Engel Aşma açık, bağlantı testinde Discord, Roblox ve Wattpad açılıyor](docs/screenshots/dpi.png)
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 🌐 Akıllı DNS
+Sağlayıcıların (Cloudflare, Google, Quad9…) **senin bağlantındaki hızını ölçer** ve en hızlısını önerir. Operatörün DNS engeli olup olmadığını teşhis eder. **Şifreli DNS** seçilirse sorgular HTTPS ile gider; operatör hangi siteye girdiğini DNS'ten göremez ve değiştiremez.
+
+</td>
+<td width="50%" valign="top">
+
+### 🕶️ Gizli Tarayıcı
+Sekmeli, **iz bırakmayan** bir tarayıcı. Pencere kapanınca geçmiş, çerez ve oturumlar silinir. Yaklaşık 74 bin reklam ve takipçi alan adı engellenir. Engel aşma ve Akıllı DNS burada da geçerlidir. Masaüstüne kısayolu oluşturulabilir.
+
+</td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/dns.png" alt="Akıllı DNS"></td>
+<td><img src="docs/screenshots/browser.png" alt="Gizli Tarayıcı"></td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 🎮 Oyun Modu
+Oyun açılınca kendiliğinden devreye girer. Seçtiğin programları (Chrome, Discord…) **dondurur** ve RAM'lerini oyuna bırakır, yüksek performans güç planına geçer, oyuna öncelik verir. Oyun kapanınca her şey kaldığı yerden devam eder. Canlı RAM, işlemci, ekran kartı ve GPU sıcaklığı gösterir. Sahte "FPS artırma" yoktur.
+
+</td>
+<td width="50%" valign="top">
+
+### 📈 İnternet
+Saniye saniye **ping grafiği**: hem internete hem modeme. Sorunun ev ağında mı yoksa operatörde mi olduğunu söyler. **Hız testi** indirme/yükleme hızının yanında oyun notu (bufferbloat) verir. Hangi uygulamanın interneti ne kadar kullandığını da gösterir.
+
+</td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/game.png" alt="Oyun Modu"></td>
+<td><img src="docs/screenshots/net.png" alt="İnternet"></td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 📡 Ağım
+Modeme bağlı **her cihazı** listeler: telefonlar, televizyon, bilgisayarlar… Üreticiyi ve mümkünse modeli bulur (ör. "Samsung 7 Series"). Ağına **tanımadığın bir cihaz bağlanınca** bildirim gösterir. Cihazlara kendi adlarını verebilirsin.
+
+</td>
+<td width="50%" valign="top">
+
+### 🕹️ Demolar
+Steam'e **yeni gelen, yakında çıkacak ve popüler** ücretsiz demolar. Arkadaşlarla oynamak için **co-op / online co-op** filtresi, Türkçe ve Steam Deck etiketleri var. Merak ettiğin demoyu takip et; oynanabilir olunca Geçit haber verir.
+
+</td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/lan.png" alt="Ağım"></td>
+<td><img src="docs/screenshots/demos.png" alt="Demolar"></td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 🎁 Bedava
+Epic ve Steam'in **şu an bedava verdiği** oyunlar ve kalan süre. Süre bitmeden alırsan oyun hesabında sonsuza dek kalır. Epic'in gelecek haftaki oyunu da önceden görünür. Yeni bedava oyun çıkınca bildirim gelir.
+
+</td>
+<td width="50%" valign="top">
+
+### ⚡ Açılış
+Windows açılırken başlayan programları ve **açılışı ne kadar yavaşlattıklarını** gösterir. Gereksizleri tek tıkla kapatırsın; hiçbir şey silinmez. İki kez kayıtlı programları ve güvenle kapatılabilecekleri işaretler, açılış süresini ölçer.
+
+</td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/free.png" alt="Bedava"></td>
+<td><img src="docs/screenshots/boot.png" alt="Açılış"></td>
+</tr>
+</table>
+
+### 🔄 Ve dahası
+- **Güncelleme**: yeni sürüm çıkınca uygulama içinden tek tıkla kurulur (dosyanın özeti doğrulanır).
+- **Sistem tepsisi**: Windows'la birlikte açılabilir, arka planda sessizce çalışır.
+- **Yönetici izni** yalnızca hizmet kurulurken istenir; uygulama normal kullanıcı olarak çalışır.
+- **Temiz kaldırma**: DNS ayarların eski haline döner, hizmetler ve sürücü silinir.
+
+> Ekran görüntüleri Türk Telekom Ethernet bağlantısında, v0.7.0 ile alındı. Ağım ekranında MAC adreslerinin son yarısı gizlendi.
+
+### Sürüm geçmişi
+
+| Özellik | Sürüm |
 |---|---|
-| **Engel Aşma**: GoodbyeDPI-Turkey ile DPI + DNS engellerini VPN'siz aşar | ✅ v0.1 |
-| **Akıllı DNS**: sağlayıcı hız ölçümü, DNS engeli teşhisi, Hızlı DNS ya da şifreli DNS (DoH) | ✅ v0.2 |
-| **Gizli Tarayıcı**: iz bırakmayan, reklam engelleyicili sekmeli tarayıcı | ✅ v0.3 |
-| **Oyun Modu**: arka plan uygulamalarını dondurur, güç planı, öncelik | ✅ v0.4 |
-| **İnternet**: canlı ping/jitter, hız testi, uygulama başına trafik | ✅ v0.5 |
-| **Ağım**: modeme bağlı cihazlar (üretici, model, ad), yeni cihaz bildirimi | ✅ v0.6 |
-| **Açılış**: başlangıç programları ve açılışa etkileri, açılış süresi ölçümü | ✅ v0.6 |
-| **Güncelleme**: GitHub'dan yeni sürüm denetimi, uygulama içinden tek tıkla kurulum | ✅ v0.6 |
-| **Demolar**: Steam'in yeni, yaklaşan ve popüler demoları; co-op filtresi, takip edilen demo çıkınca bildirim | ✅ v0.7 |
-| **Bedava**: Epic ve Steam'de alınca hesapta kalan bedava oyunlar, yeni bedava oyun bildirimi | ✅ v0.7 |
+| Engel Aşma (GoodbyeDPI-Turkey) | v0.1 |
+| Akıllı DNS (Hızlı DNS, şifreli DNS / DoH) | v0.2 |
+| Gizli Tarayıcı | v0.3 |
+| Oyun Modu | v0.4 |
+| İnternet (ping, hız testi, uygulama başına trafik) | v0.5 |
+| Ağım, Açılış, uygulama içi güncelleme | v0.6 |
+| Demolar, Bedava | v0.7 |
 
 ## İndir
 
