@@ -1,265 +1,279 @@
+<p align="right"><b>English</b> | <a href="README.tr.md">Türkçe</a></p>
+
 # Geçit
 
-PC'yi açar açmaz açılan, interneti ve bilgisayarı en iyi şekilde kullandıran hepsi-bir-arada Windows uygulaması.
+An all-in-one Windows app that starts with your PC and helps you get the most out of your internet and your computer.
 
-Discord, Roblox gibi engelli siteleri VPN'siz açar; DNS'i hızlandırıp şifreler, oyun oynarken arka plandaki programları dondurur, internetin ve evdeki ağın durumunu gösterir. Steam'in yeni demolarını ve Epic/Steam'de bedava dağıtılan oyunları da takip eder.
+It opens blocked sites like Discord and Roblox without a VPN, speeds up and encrypts your DNS, freezes background programs while you play, and shows what is going on with your internet connection and your home network. It also keeps track of new Steam demos and the games Epic and Steam are giving away for free.
 
 <p align="center">
-  <a href="../../releases/latest"><b>⬇ Geçit'i indir (Windows 10/11)</b></a>
+  <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/Furkan-Erg/Gecit?label=release" alt="Latest release"></a>
+  <a href="../../releases"><img src="https://img.shields.io/github/downloads/Furkan-Erg/Gecit/total" alt="Downloads"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Furkan-Erg/Gecit" alt="License: GPL-3.0"></a>
+  <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue" alt="Windows 10 | 11">
 </p>
 
-## Neler yapar?
+<p align="center">
+  <a href="../../releases/latest"><b>⬇ Download Geçit (Windows 10/11)</b></a>
+</p>
 
-### 🛡️ Engel Aşma
-Operatörün engellediği siteleri (Discord, Roblox, Wattpad…) **tek tuşla** açar. VPN değildir: trafik başka bir sunucudan geçmez, internet hızın düşmez. Bir site açılmazsa farklı yöntemleri tek tıkla deneyebilir, "Bağlantı testi" ile hangi sitelerin açıldığını görebilirsin. Pencereyi kapatsan da arka planda çalışır.
+> *Geçit* (pronounced "geh-chit") is Turkish for "passage" or "mountain pass". The app is available in English and Turkish.
 
-![Geçit: Engel Aşma açık, bağlantı testinde Discord, Roblox ve Wattpad açılıyor](docs/screenshots/dpi.png)
+## What does it do?
+
+### 🛡️ Unblock
+Opens sites blocked by your ISP (Discord, Roblox, Wattpad…) with **one click**. It is not a VPN: your traffic does not go through anyone else's server, so your speed does not drop. If a site still won't open, you can try a different method with one click, and the "Connection test" shows which sites open. It keeps working in the background after you close the window.
+
+The unblocking methods are tuned for ISPs in Turkey (built on [GoodbyeDPI-Turkey](https://github.com/cagritaskn/GoodbyeDPI-Turkey)). Everything else in Geçit works anywhere.
+
+![Geçit: Unblock is on, the connection test shows Discord, Roblox and Wattpad opening](docs/screenshots/dpi.png)
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
-### 🌐 Akıllı DNS
-Sağlayıcıların (Cloudflare, Google, Quad9…) **senin bağlantındaki hızını ölçer** ve en hızlısını önerir. Operatörün DNS engeli olup olmadığını teşhis eder. **Şifreli DNS** seçilirse sorgular HTTPS ile gider; operatör hangi siteye girdiğini DNS'ten göremez ve değiştiremez.
+### 🌐 Smart DNS
+**Measures the speed** of DNS providers (Cloudflare, Google, Quad9…) **on your own connection** and suggests the fastest. It tells you whether your ISP blocks sites through DNS. With **Encrypted DNS**, queries go over HTTPS, so your ISP can neither see nor change which sites you look up.
 
 </td>
 <td width="50%" valign="top">
 
-### 🕶️ Gizli Tarayıcı
-Sekmeli, **iz bırakmayan** bir tarayıcı. Pencere kapanınca geçmiş, çerez ve oturumlar silinir. Yaklaşık 74 bin reklam ve takipçi alan adı engellenir. Engel aşma ve Akıllı DNS burada da geçerlidir. Masaüstüne kısayolu oluşturulabilir.
+### 🕶️ Private Browser
+A tabbed browser that **leaves no trace**. When the window closes, history, cookies and sessions are deleted. About 74 thousand ad and tracker domains are blocked. Unblock and Smart DNS work here too. It can have its own desktop shortcut.
 
 </td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/dns.png" alt="Akıllı DNS"></td>
-<td><img src="docs/screenshots/browser.png" alt="Gizli Tarayıcı"></td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-### 🎮 Oyun Modu
-Oyun açılınca kendiliğinden devreye girer. Seçtiğin programları (Chrome, Discord…) **dondurur** ve RAM'lerini oyuna bırakır, yüksek performans güç planına geçer, oyuna öncelik verir. Oyun kapanınca her şey kaldığı yerden devam eder. Canlı RAM, işlemci, ekran kartı ve GPU sıcaklığı gösterir. Sahte "FPS artırma" yoktur.
-
-</td>
-<td width="50%" valign="top">
-
-### 📈 İnternet
-Saniye saniye **ping grafiği**: hem internete hem modeme. Sorunun ev ağında mı yoksa operatörde mi olduğunu söyler. **Hız testi** indirme/yükleme hızının yanında oyun notu (bufferbloat) verir. Hangi uygulamanın interneti ne kadar kullandığını da gösterir.
-
-</td>
-</tr>
-<tr>
-<td><img src="docs/screenshots/game.png" alt="Oyun Modu"></td>
-<td><img src="docs/screenshots/net.png" alt="İnternet"></td>
+<td><img src="docs/screenshots/dns.png" alt="Smart DNS"></td>
+<td><img src="docs/screenshots/browser.png" alt="Private Browser"></td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-### 📡 Ağım
-Modeme bağlı **her cihazı** listeler: telefonlar, televizyon, bilgisayarlar… Üreticiyi ve mümkünse modeli bulur (ör. "Samsung 7 Series"). Ağına **tanımadığın bir cihaz bağlanınca** bildirim gösterir. Cihazlara kendi adlarını verebilirsin.
+### 🎮 Game Mode
+Turns on by itself when a game starts. It **freezes** the programs you pick (Chrome, Discord…) and hands their RAM to the game, switches to the high performance power plan, and gives the game priority. When the game closes, everything picks up where it left off. Shows live RAM, CPU, GPU usage and GPU temperature. No fake "FPS boost".
 
 </td>
 <td width="50%" valign="top">
 
-### 🕹️ Demolar
-Steam'e **yeni gelen, yakında çıkacak ve popüler** ücretsiz demolar. Arkadaşlarla oynamak için **co-op / online co-op** filtresi, Türkçe ve Steam Deck etiketleri var. Merak ettiğin demoyu takip et; oynanabilir olunca Geçit haber verir.
+### 📈 Internet
+A second-by-second **ping graph**, both to the internet and to your router, so you know whether the problem is your home network or your ISP. The **speed test** gives a gaming grade (bufferbloat) next to download and upload speed. It also shows how much each app is using your internet.
 
 </td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/lan.png" alt="Ağım"></td>
-<td><img src="docs/screenshots/demos.png" alt="Demolar"></td>
+<td><img src="docs/screenshots/game.png" alt="Game Mode"></td>
+<td><img src="docs/screenshots/net.png" alt="Internet"></td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-### 🎁 Bedava
-Epic ve Steam'in **şu an bedava verdiği** oyunlar ve kalan süre. Süre bitmeden alırsan oyun hesabında sonsuza dek kalır. Epic'in gelecek haftaki oyunu da önceden görünür. Yeni bedava oyun çıkınca bildirim gelir.
+### 📡 My Network
+Lists **every device** on your router: phones, TVs, computers… Finds the maker and, where it can, the model (e.g. "Samsung 7 Series"). Shows a notification when **a device you don't know joins** your network. You can give devices your own names.
 
 </td>
 <td width="50%" valign="top">
 
-### ⚡ Açılış
-Windows açılırken başlayan programları ve **açılışı ne kadar yavaşlattıklarını** gösterir. Gereksizleri tek tıkla kapatırsın; hiçbir şey silinmez. İki kez kayıtlı programları ve güvenle kapatılabilecekleri işaretler, açılış süresini ölçer.
+### 🕹️ Demos
+**New, upcoming and popular** free demos on Steam. There is a **co-op / online co-op** filter for playing with friends, plus Turkish-language and Steam Deck tags. Follow a demo you're curious about and Geçit tells you when it becomes playable.
 
 </td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/free.png" alt="Bedava"></td>
-<td><img src="docs/screenshots/boot.png" alt="Açılış"></td>
+<td><img src="docs/screenshots/lan.png" alt="My Network"></td>
+<td><img src="docs/screenshots/demos.png" alt="Demos"></td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 🎁 Free Games
+The games Epic and Steam are **giving away right now** and the time left. Claim one before time runs out and it stays in your account forever. Epic's game for next week shows up in advance too. You get a notification when a new giveaway starts.
+
+</td>
+<td width="50%" valign="top">
+
+### ⚡ Startup
+Shows the programs that start with Windows and **how much each one slows down boot**. Turn off the ones you don't need with one click; nothing is deleted. It marks programs registered twice and the ones that are safe to turn off, and measures your boot time.
+
+</td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/free.png" alt="Free Games"></td>
+<td><img src="docs/screenshots/boot.png" alt="Startup"></td>
 </tr>
 </table>
 
-### 🔄 Ve dahası
-- **Güncelleme**: yeni sürüm çıkınca uygulama içinden tek tıkla kurulur (dosyanın özeti doğrulanır).
-- **Sistem tepsisi**: Windows'la birlikte açılabilir, arka planda sessizce çalışır.
-- **Yönetici izni** yalnızca hizmet kurulurken istenir; uygulama normal kullanıcı olarak çalışır.
-- **Temiz kaldırma**: DNS ayarların eski haline döner, hizmetler ve sürücü silinir.
+### 🔄 And more
+- **Updates**: when a new version is out, it installs from inside the app with one click (the file's checksum is verified).
+- **System tray**: can start with Windows and runs quietly in the background.
+- **Administrator rights** are asked for only when installing the services; the app itself runs as a normal user.
+- **Clean uninstall**: your DNS settings go back to what they were, and the services and driver are removed.
+- **Two languages**: English and Turkish. Follows your Windows language by default; you can change it in Settings.
 
-> Ekran görüntüleri Türk Telekom Ethernet bağlantısında, v0.7.0 ile alındı. Ağım ekranında MAC adreslerinin son yarısı gizlendi.
+> The screenshots were taken with v0.7.0 on a Türk Telekom Ethernet connection, with the Turkish interface. The second half of each MAC address is hidden on the My Network screen.
 
-### Sürüm geçmişi
+### Version history
 
-| Özellik | Sürüm |
+| Feature | Version |
 |---|---|
-| Engel Aşma (GoodbyeDPI-Turkey) | v0.1 |
-| Akıllı DNS (Hızlı DNS, şifreli DNS / DoH) | v0.2 |
-| Gizli Tarayıcı | v0.3 |
-| Oyun Modu | v0.4 |
-| İnternet (ping, hız testi, uygulama başına trafik) | v0.5 |
-| Ağım, Açılış, uygulama içi güncelleme | v0.6 |
-| Demolar, Bedava | v0.7 |
+| Unblock (GoodbyeDPI-Turkey) | v0.1 |
+| Smart DNS (fast DNS, encrypted DNS / DoH) | v0.2 |
+| Private Browser | v0.3 |
+| Game Mode | v0.4 |
+| Internet (ping, speed test, per-app traffic) | v0.5 |
+| My Network, Startup, in-app updates | v0.6 |
+| Demos, Free Games | v0.7 |
 
-## İndir
+## Download
 
-[**Releases**](../../releases/latest) sayfasından `Gecit-Setup-<sürüm>.exe` dosyasını indirip çalıştırın. Windows 10 (1809+) veya 11, 64 bit gerekir; .NET kurmaya gerek yoktur.
+Download `Gecit-Setup-<version>.exe` from the [**Releases**](../../releases/latest) page and run it. Requires Windows 10 (1809+) or 11, 64-bit. You don't need to install .NET.
 
-- Paketin kod imzası olmadığı için Windows "Bilgisayarınız korundu" diyebilir: **Ek bilgi → Yine de çalıştır**.
-- Bazı antivirüsler (ör. Kaspersky) GoodbyeDPI'ın kullandığı WinDivert sürücüsünü engelleyebilir. Sürücü imzalı ve açık kaynaklıdır; aşağıda doğrulama notları var.
-- Kaldırmak için: Ayarlar → Uygulamalar → Geçit. DNS ayarları eski haline döner, hizmetler ve sürücü silinir.
+- The installer is not code-signed, so Windows may say "Windows protected your PC": click **More info → Run anyway**.
+- Some antivirus programs (e.g. Kaspersky) may block the WinDivert driver that GoodbyeDPI uses. The driver is signed and open source; see the verification notes below.
+- To uninstall: Settings → Apps → Geçit. Your DNS settings are restored, and the services and driver are removed.
 
-## Derleme
+## Building
 
-Gereksinimler: .NET 10 SDK, WebView2 Runtime (Windows 10/11'de genelde kurulu).
+Requirements: .NET 10 SDK, WebView2 Runtime (usually already installed on Windows 10/11).
 
 ```powershell
 dotnet build
 .\src\Gecit\bin\Debug\net10.0-windows\win-x64\Gecit.exe
 ```
 
-## Kurulum paketi
+## Installer
 
 ```powershell
-winget install JRSoftware.InnoSetup   # bir kez
-pwsh installer\build.ps1              # -> dist\Gecit-Setup-<sürüm>.exe
+winget install JRSoftware.InnoSetup   # once
+pwsh installer\build.ps1              # -> dist\Gecit-Setup-<version>.exe
 ```
 
-- `dotnet publish` self-contained çalışır, kullanıcının .NET kurması gerekmez. Paket yaklaşık 38 MB (kurulu hali yaklaşık 120 MB). Sürüm numarası `src\Gecit\Gecit.csproj` içindeki `<Version>` alanından alınır.
-- Uygulama `C:\Program Files\Gecit` klasörüne kurulur. Klasör seçilemez, çünkü hizmetler `Gecit.exe`'yi buradan çalıştırır: `GecitDNS` = `Gecit.exe --dns-service <sağlayıcı>`, `GecitDPI` = `dpi\goodbyedpi.exe`. Geliştirme sürümü çalışırken bu klasöre kendini kopyalar (`AppInstall.EnsureInstalledCopy`).
-- WebView2 yoksa Microsoft'un bootstrapper'ı sessizce kurulur.
-- Güncelleme: kurulum çalışan uygulamayı `Gecit.exe --exit` ile düzgünce kapatır (oyun modu bitirilir, dondurulanlar çözülür). Ardından `sc` ile GecitDNS/GecitDPI hizmetlerini ve WinDivert sürücüsünü durdurur. Dosyalar değiştikten sonra `--elevated resume-services` daha önce çalışanları yeniden başlatır.
-- Kaldırma: `--elevated uninstall --full` çalışır. DNS eski haline döner, hizmetler ve sürücü silinir, açılışta başlatma kaydı silinir. Ardından klasör, kısayollar, `%LOCALAPPDATA%\Gecit` ve `%ProgramData%\Gecit` silinir. Kullanıcı ayarları (`%APPDATA%\Gecit`) korunur. 2026-10-26'da sessiz kurulum, kaldırma ve yeniden kurma ile doğrulandı.
-- Paketin kod imzası yok, bu yüzden SmartScreen "Bilgisayarınız korundu" uyarısı gösterir. Kurulumdaki bilgilendirme sayfası (`installer\notice-tr.txt`) bunu ve VPN olmadığını açıklar.
-- Şifreli DNS hizmetinin günlüğü `%ProgramData%\Gecit\dns.log` dosyasına yazılır. Hizmet doğrulamayı geçemezse son satırlar hata mesajına eklenir.
+- `dotnet publish` runs self-contained, so users don't need .NET. The package is about 38 MB (about 120 MB installed). The version number comes from `<Version>` in `src\Gecit\Gecit.csproj`.
+- The app installs to `C:\Program Files\Gecit`. The folder can't be changed, because the services run `Gecit.exe` from there: `GecitDNS` = `Gecit.exe --dns-service <provider>`, `GecitDPI` = `dpi\goodbyedpi.exe`. A development build copies itself into this folder when it runs (`AppInstall.EnsureInstalledCopy`).
+- If WebView2 is missing, Microsoft's bootstrapper installs it silently.
+- Updating: the installer closes the running app cleanly with `Gecit.exe --exit` (game mode ends, frozen programs are resumed). It then stops the GecitDNS/GecitDPI services and the WinDivert driver with `sc`. After the files are replaced, `--elevated resume-services` restarts whatever was running before.
+- Uninstalling: runs `--elevated uninstall --full`. DNS is restored, the services and driver are removed, and the start-with-Windows entry is deleted. Then the folder, shortcuts, `%LOCALAPPDATA%\Gecit` and `%ProgramData%\Gecit` are deleted. User settings (`%APPDATA%\Gecit`) are kept. Verified on 2026-10-26 with a silent install, uninstall and reinstall.
+- The package is not code-signed, so SmartScreen shows a "Windows protected your PC" warning. The information page in the installer (`installer\notice-en.txt`, `installer\notice-tr.txt`) explains this and that Geçit is not a VPN.
+- The encrypted DNS service logs to `%ProgramData%\Gecit\dns.log`. If the service fails its check, the last lines are added to the error message.
 
-## Nasıl çalışır
+## How it works
 
 ```
-Gecit.exe (normal kullanıcı)            Gecit.exe --elevated install <yöntem>   (yalnızca kurulumda, UAC)
- ├─ WinForms penceresi + WebView2        ├─ dpi\ → C:\Program Files\Gecit\dpi\
- │   └─ wwwroot/ (HTML/CSS/JS arayüz)    ├─ sc create GecitDPI  (start=demand)
- ├─ sistem tepsisi simgesi               └─ sc sdset: etkileşimli kullanıcıya yalnızca başlat/durdur izni
- └─ GecitDPI hizmetini başlat/durdur
+Gecit.exe (normal user)                 Gecit.exe --elevated install <method>   (only during setup, UAC)
+ ├─ WinForms window + WebView2           ├─ dpi\ → C:\Program Files\Gecit\dpi\
+ │   └─ wwwroot/ (HTML/CSS/JS UI)        ├─ sc create GecitDPI  (start=demand)
+ ├─ system tray icon                     └─ sc sdset: interactive user may only start/stop
+ └─ start/stop the GecitDPI service
         └─ goodbyedpi.exe → WinDivert64.sys
 ```
 
-- Uygulama **yönetici olmadan** çalışır. Yönetici izni yalnızca hizmet kurulurken, yöntem değişirken ve kaldırılırken istenir.
-- Hizmet SYSTEM olarak çalıştığı için dosyaları kullanıcının değiştiremeyeceği `Program Files` altına kopyalanır. Kullanıcılara hizmetin yapılandırmasını değiştirme izni **verilmez**, yalnızca başlatma ve durdurma izni verilir; aksi halde yetki yükseltme açığı olurdu.
-- "Açık" durumu, hizmet çalışıyor **ve** WinDivert sürücüsü yüklü demektir. goodbyedpi, sürücü açılmadan önce "çalışıyor" bildirir.
-- Ayarlar: `%APPDATA%\Gecit\settings.json`. Açılışta başlatma: `HKCU\...\Run\Gecit` (`--tray`).
+- The app runs **without administrator rights**. Admin rights are asked for only when installing the service, changing the method, and uninstalling.
+- Because the service runs as SYSTEM, its files are copied under `Program Files`, where users can't change them. Users are **not** given permission to change the service's configuration, only to start and stop it; otherwise it would be a privilege escalation hole.
+- "On" means the service is running **and** the WinDivert driver is loaded. goodbyedpi reports "running" before the driver is opened.
+- Settings: `%APPDATA%\Gecit\settings.json`. Start with Windows: `HKCU\...\Run\Gecit` (`--tray`).
 
-### Akıllı DNS
+### Smart DNS
 
-| Mod | Ne yapar |
+| Mode | What it does |
 |---|---|
-| Otomatik | Modemin/operatörün DNS'i (Geçit'ten önceki ayar geri yüklenir). Engel aşma açıkken GoodbyeDPI'ın Yandex yönlendirmesi DNS engelini aşar. |
-| Hızlı DNS | Seçilen sağlayıcının adreslerini internete bağlı bağdaştırıcılara yazar (`netsh`). Arka planda bir şey çalışmaz. |
-| Şifreli DNS | `GecitDNS` hizmeti (`Gecit.exe --dns-service`, kodu `src/Gecit.Dns`, LocalService hesabıyla) 127.0.0.1:53 ve [::1]:53'te dinler, sorguları RFC 8484 DoH ile iletir. Sistem DNS'i 127.0.0.1 / ::1 olur. |
+| Automatic | Your router's/ISP's DNS (the setting from before Geçit is restored). While Unblock is on, GoodbyeDPI's Yandex redirect gets around DNS blocking. |
+| Fast DNS | Writes the chosen provider's addresses to the adapters connected to the internet (`netsh`). Nothing runs in the background. |
+| Encrypted DNS | The `GecitDNS` service (`Gecit.exe --dns-service`, code in `src/Gecit.Dns`, running as LocalService) listens on 127.0.0.1:53 and [::1]:53 and forwards queries over RFC 8484 DoH. The system DNS becomes 127.0.0.1 / ::1. |
 
-- GoodbyeDPI'ın Yandex DNS yönlendirmesi, Akıllı DNS açıkken kapatılır; yoksa kullanıcının seçtiği DNS'i ezerdi. Yöntemler (Standart, TTL'siz, Sağlam, TTL 3) bundan bağımsızdır.
-- Güvenlik sırası: sistem DNS'i, DoH hizmeti gerçek bir sorguyu yanıtladıktan **sonra** 127.0.0.1'e çevrilir. Hizmet kaldırılmadan **önce** de başka adrese çevrilir. Böylece DNS'siz kalınan bir an olmaz.
-- DoH yedekleri: seçilen sağlayıcı → Cloudflare/Google/Quad9 → son çare düz UDP. DoH tamamen çökerse gizlilik azalır ama internet kesilmez. Hizmet çökerse Windows 3 kez yeniden başlatır, uygulama da ayrıca başlatmayı dener (kullanıcılar başlatabilir ama durduramaz).
-- İlk değişiklikten önceki DNS ayarları `C:\Program Files\Gecit\dns-backup.json` dosyasına yedeklenir. Otomatik moda dönünce ve "Geçit'i sistemden temizle" ile geri yüklenir.
-- Test: `Gecit.Dns.exe cloudflare --console --port 5454` (5353 mDNS'e ait, kullanmayın). Tek sorgu için: `Gecit.Dns.exe quad9 --query discord.com`. Not: Windows `nslookup` `-port=` seçeneğini yok sayıp 53'e sorar.
+- GoodbyeDPI's Yandex DNS redirect is turned off while Smart DNS is on; otherwise it would override the DNS the user picked. The methods (Standard, No TTL, Robust, TTL 3) are independent of this.
+- Safety order: the system DNS is switched to 127.0.0.1 only **after** the DoH service has answered a real query. It is also switched to another address **before** the service is removed. So there is never a moment without DNS.
+- DoH fallbacks: chosen provider → Cloudflare/Google/Quad9 → plain UDP as a last resort. If DoH breaks completely, privacy drops but the internet keeps working. If the service crashes, Windows restarts it 3 times, and the app also tries to start it (users can start it but not stop it).
+- The DNS settings from before the first change are backed up to `C:\Program Files\Gecit\dns-backup.json`. They are restored when you go back to Automatic and by "Remove Geçit from the system".
+- Testing: `Gecit.Dns.exe cloudflare --console --port 5454` (5353 belongs to mDNS, don't use it). For a single query: `Gecit.Dns.exe quad9 --query discord.com`. Note: Windows `nslookup` ignores `-port=` and queries port 53.
 
-Bu bağlantıda (Türk Telekom, 2026-10-26) ölçülenler: operatör engelli adları 195.175.254.2'ye çeviriyor, ama başka sunuculara giden 53 portu trafiğine karışmıyor. Yani Hızlı DNS de DNS engelini aşar. DoH sorgu süreleri: Google ~54 ms, AdGuard ~56, Cloudflare ~61, Quad9 ~64, Yandex ~113.
+Measured on this connection (Türk Telekom, 2026-10-26): the ISP resolves blocked names to 195.175.254.2, but does not touch port 53 traffic going to other servers. So Fast DNS also gets around DNS blocking. DoH query times: Google ~54 ms, AdGuard ~56, Cloudflare ~61, Quad9 ~64, Yandex ~113.
 
-### Gizli Tarayıcı
+### Private Browser
 
-- `BrowserForm`: üstte HTML araç çubuğu (`wwwroot/browser/chrome.html`), altında her sekme için bir WebView2. Sekmelerin hepsi tek bir **InPrivate** profilini (`gecit-private`) paylaşır. WebView2 bu profilin verisini son sekme kapanınca siler; "Temizle" ayrıca `ClearBrowsingDataAsync` çağırır.
-- Reklam/takipçi engeli: Edge izleme koruması "Katı" + `AdBlocker` (StevenBlack unified hosts, yaklaşık 74 bin alan adı, `%LOCALAPPDATA%\Gecit\blocklist-hosts.txt`, haftalık yenilenir). Alan adı ve tüm üst alan adlarıyla eşleşir. Engellenen istekler `WebResourceRequested` içinde 403 ile kesilir. Kullanıcının açtığı ana sayfa hiçbir zaman engellenmez.
-- Açılır pencereler gerçek sekme olarak verilir (`NewWindow`), böylece "Google ile giriş yap" gibi `window.opener` akışları çalışır.
-- Araç çubuğu sayfası C#'a komut gönderebildiği için, sayfalardan gelen veriler (başlık vb.) oraya yalnızca `textContent` ile yazılır.
-- `Gecit.exe --browser` doğrudan tarayıcıyı açar (masaüstü kısayolu bunu kullanır). Uygulama zaten açıksa ona sinyal gönderilir.
+- `BrowserForm`: an HTML toolbar on top (`wwwroot/browser/chrome.html`), with one WebView2 per tab below it. All tabs share a single **InPrivate** profile (`gecit-private`). WebView2 deletes this profile's data when the last tab closes; "Clear" also calls `ClearBrowsingDataAsync`.
+- Ad/tracker blocking: Edge tracking prevention set to "Strict" + `AdBlocker` (StevenBlack unified hosts, about 74 thousand domains, `%LOCALAPPDATA%\Gecit\blocklist-hosts.txt`, refreshed weekly). It matches the domain and all of its parent domains. Blocked requests are cut off with a 403 in `WebResourceRequested`. The main page the user opens is never blocked.
+- Pop-ups are given real tabs (`NewWindow`), so `window.opener` flows like "Sign in with Google" work.
+- Because the toolbar page can send commands to C#, data coming from pages (titles etc.) is written there only with `textContent`.
+- `Gecit.exe --browser` opens the browser directly (the desktop shortcut uses this). If the app is already open, it gets a signal instead.
 
-### Oyun Modu
+### Game Mode
 
-- Algılama (2 saniyede bir): hazır liste (`GameCatalog.Known`, Türkiye'de popüler Metin2/Knight Online/Zula dahil), Steam kütüphaneleri (`libraryfolders.vdf` + `appmanifest_*.acf`), Epic manifestleri, kullanıcının eklediği .exe'ler ve isteğe bağlı olarak `SHQueryUserNotificationState == QUNS_RUNNING_D3D_FULL_SCREEN`.
-- Oyun başlayınca:
-  - Yüksek performans güç planına geçilir (`powercfg`, yönetici gerekmez).
-  - Oyuna yüksek öncelik verilir.
-  - Seçilen uygulamalar ya **dondurulur** (`NtSuspendProcess` + `EmptyWorkingSet`: işlemci sıfırlanır, RAM sayfa dosyasına gider, kaldığı yerden devam eder) ya da **kapatılır** (`CloseMainWindow`, hiçbir şey zorla öldürülmez; oyun bitince yeniden açılır).
-- Oyun işlemi kapanınca hepsi geri alınır. Kullanıcı oyun sırasında güç planını kendisi değiştirdiyse ona dokunulmaz. Çözme işlemi PID ile birlikte başlangıç zamanını da kontrol eder, böylece aynı PID'yi alan başka bir işleme dokunulmaz.
-- Çökme güvenliği: oturum, bir şeye dokunulmadan önce `%LOCALAPPDATA%\Gecit\gamemode-session.json` dosyasına yazılır. Geçit çökerse bir sonraki açılışta dondurulanlar çözülür ve güç planı geri alınır (testte doğrulandı).
-- Oyunun kendisine bir şey enjekte edilmez, yalnızca öncelik değiştirilir. Hile koruması buna izin vermezse not olarak gösterilir.
-- Canlı panel: RAM, CPU (`GetSystemTimes`), GPU kullanımı, VRAM ve sıcaklık (`nvidia-smi`). Oturum raporunda boşalan RAM ve en yüksek GPU sıcaklığı yer alır.
+- Detection (every 2 seconds): a built-in list (`GameCatalog.Known`, including Metin2/Knight Online/Zula, which are popular in Turkey), Steam libraries (`libraryfolders.vdf` + `appmanifest_*.acf`), Epic manifests, .exe files the user added, and optionally `SHQueryUserNotificationState == QUNS_RUNNING_D3D_FULL_SCREEN`.
+- When a game starts:
+  - It switches to the high performance power plan (`powercfg`, no admin needed).
+  - The game gets high priority.
+  - The chosen apps are either **frozen** (`NtSuspendProcess` + `EmptyWorkingSet`: CPU drops to zero, RAM goes to the page file, and they pick up where they left off) or **closed** (`CloseMainWindow`, nothing is force-killed; they are reopened when the game ends).
+- When the game process closes, all of this is undone. If the user changed the power plan themselves during the game, it is left alone. Resuming checks the start time along with the PID, so a different process that got the same PID is never touched.
+- Crash safety: the session is written to `%LOCALAPPDATA%\Gecit\gamemode-session.json` before anything is touched. If Geçit crashes, frozen apps are resumed and the power plan is restored on the next start (verified in testing).
+- Nothing is injected into the game itself; only its priority is changed. If the anti-cheat doesn't allow that, a note is shown.
+- Live panel: RAM, CPU (`GetSystemTimes`), GPU usage, VRAM and temperature (`nvidia-smi`). The session report includes the RAM freed and the highest GPU temperature.
 
-### İnternet
+### Internet
 
-- Canlı bağlantı: internet hedefi (Cloudflare, Google ya da kullanıcının yazdığı oyun sunucusu) ve varsayılan ağ geçidi (modem) saniyede bir ICMP ile pinglenir. Son 120 saniye grafiğe çizilir. Ortalama, dalgalanma (art arda ölçümlerin farkı) ve kayıp hesaplanır. Teşhis şöyle yapılır: modem pingi kötüyse sorun ev ağında (Wi-Fi/kablo), modem iyi ama internet kötüyse sorun operatörde. Döngü yalnızca sayfa açıkken çalışır ve 6 saniye boyunca istek gelmezse kendiliğinden durur.
-- Hız testi: `speed.cloudflare.com` üzerinden 6 paralel indirme ve 4 paralel yükleme, her biri 8 saniye. İlk 1,5 saniye TCP yavaş başlangıcı olduğu için ölçüme katılmaz. Test sırasında 1.1.1.1 pinglenir ve gecikme artışına göre bufferbloat notu verilir (A+ <5 ms, A <30, B <60, C <200, D <400, F). Cloudflare 50 MB'tan büyük indirme isteklerine 403 döndürür.
-- Uygulama başına trafik: Windows çekirdek ETW oturumunu yalnızca yöneticiye açar. Bu yüzden `Gecit.exe --elevated netmon <pipe> <uiPid>` yardımcı süreci (TraceEvent, `NetworkTCPIP | Process`) saniyede bir PID başına baytları adlandırılmış kanala yazar. Arayüz kanalı kapatınca ya da kendisi kapanınca yardımcı da çıkar (testte doğrulandı). Süreç adları paketin ilk görüldüğü anda alınır, ölmüş süreçler için ProcessStart/DCStart olaylarındaki dosya adı kullanılır.
+- Live connection: an internet target (Cloudflare, Google or a game server the user types in) and the default gateway (router) are pinged over ICMP once a second. The last 120 seconds are drawn on the graph. Average, jitter (difference between consecutive pings) and loss are calculated. Diagnosis: if the router ping is bad, the problem is in your home network (Wi-Fi/cable); if the router is fine but the internet is bad, the problem is with your ISP. The loop runs only while the page is open and stops on its own if no request comes in for 6 seconds.
+- Speed test: 6 parallel downloads and 4 parallel uploads via `speed.cloudflare.com`, 8 seconds each. The first 1.5 seconds are TCP slow start, so they are left out of the measurement. 1.1.1.1 is pinged during the test, and the bufferbloat grade comes from how much latency rises (A+ <5 ms, A <30, B <60, C <200, D <400, F). Cloudflare returns 403 for download requests larger than 50 MB.
+- Per-app traffic: Windows opens the kernel ETW session only to administrators. So the `Gecit.exe --elevated netmon <pipe> <uiPid>` helper process (TraceEvent, `NetworkTCPIP | Process`) writes bytes per PID to a named pipe once a second. The helper exits when the UI closes the pipe or exits itself (verified in testing). Process names are taken when a packet is first seen; for processes that have exited, the file name from ProcessStart/DCStart events is used.
 
-Bu bağlantıda ölçülenler (2026-10-26, Ethernet): Cloudflare'e 53 ms, modeme ~1 ms, 620 Mbps indirme, 47,8 Mbps yükleme, yük altında +5 ms → not A.
+Measured on this connection (2026-10-26, Ethernet): 53 ms to Cloudflare, ~1 ms to the router, 620 Mbps download, 47.8 Mbps upload, +5 ms under load → grade A.
 
-### Ağım
+### My Network
 
-- Yönetici izni gerekmez. `LanScanner` kendi /24 ağındaki 254 adrese iki tur ping atar. Ping'e cevap vermeyen cihazlar da Windows'un ARP sorusuna cevap verdiği için ARP tablosuna (`GetIpNetTable`) düşer. IP ve MAC buradan gelir.
-- Adlar şu sırayla aranır, hepsi paralel çalışır:
-  - Cihazın kendi arayüzü: Samsung TV `:8001/api/v2/`, Chromecast/Google TV `:8008/setup/eureka_info`, Roku `:8060/query/device-info`. Hepsi yalnızca okuma yapar ve eşleştirme istemez.
-  - UPnP/SSDP açıklaması: `friendlyName`, üretici ve model. Modemlerin genel "Internet Home Gateway Device" adı atlanır, modem hep "Modem" diye görünür.
-  - Cihazın kendisine mDNS PTR sorgusu (5353), NetBIOS düğüm durumu ve modemin DNS'inde PTR kaydı.
-- Üretici, MAC'in ilk yarısından (OUI) bulunur. Veri gömülü `Assets/oui.txt.gz` dosyasından gelir (58 bin kayıt, 540 KB). `tools/build-oui.ps1` bu dosyayı Wireshark'ın IEEE kayıt kopyasından yeniden üretir. Telefonların "gizli MAC" adreslerinde (yerel yönetilen bit) üretici yoktur; bunlar telefon/tablet olarak tahmin edilir.
-- Görülen cihazlar ağ başına `%APPDATA%\Gecit\devices.json` dosyasında saklanır. Ağ, modemin MAC adresiyle ayırt edilir, böylece başka bir ağa geçen dizüstü yanlış "yeni cihaz" uyarısı vermez. İlk tarama temel kabul edilir. Sonra ortaya çıkan cihazlar bir gün boyunca "yeni" etiketi taşır ve arka plan denetiminde (10 dakikada bir, oyun sırasında yapılmaz) bildirim gösterilir.
-- Bu ağda (2026-10-26): modem Nokia (Taicang T&W üretimi), 7 cihaz. Samsung TV, açıkken kendi API'sinden "Samsung 7 Series (43)" adıyla tanındı. Modem, mDNS çoklu yayınını Wi-Fi ile kablo arasında taşımıyor; telefonların adı bu yüzden çıkmıyor.
+- No admin rights needed. `LanScanner` pings the 254 addresses on its own /24 network twice. Devices that don't answer pings still end up in the ARP table (`GetIpNetTable`), because they answer Windows' ARP request. IP and MAC come from there.
+- Names are looked up in this order, all in parallel:
+  - The device's own interface: Samsung TV `:8001/api/v2/`, Chromecast/Google TV `:8008/setup/eureka_info`, Roku `:8060/query/device-info`. All are read-only and don't ask for pairing.
+  - UPnP/SSDP description: `friendlyName`, manufacturer and model. Routers' generic "Internet Home Gateway Device" name is skipped; the router always shows as "Router".
+  - An mDNS PTR query to the device itself (5353), NetBIOS node status, and a PTR record in the router's DNS.
+- The maker is found from the first half of the MAC (OUI). The data comes from the embedded `Assets/oui.txt.gz` (58 thousand entries, 540 KB). `tools/build-oui.ps1` rebuilds this file from Wireshark's copy of the IEEE registry. Phones' "private MAC" addresses (locally administered bit) have no maker; these are guessed to be phones/tablets.
+- Devices seen are stored per network in `%APPDATA%\Gecit\devices.json`. Networks are told apart by the router's MAC, so a laptop moving to another network doesn't raise false "new device" alerts. The first scan is taken as the baseline. Devices that show up later carry a "new" tag for a day, and a notification is shown by the background check (every 10 minutes, not during games).
+- On this network (2026-10-26): a Nokia router (made by Taicang T&W), 7 devices. The Samsung TV was recognized as "Samsung 7 Series (43)" through its own API while it was on. The router doesn't pass mDNS multicast between Wi-Fi and cable, which is why the phones' names don't show up.
 
-### Açılış
+### Startup
 
-- Liste, Görev Yöneticisi'nin Başlangıç sekmesiyle aynıdır: HKCU/HKLM `Run`, `WOW6432Node\Run` ve iki Başlangıç klasörü. Açma/kapama, Görev Yöneticisi'nin kullandığı `Explorer\StartupApproved` değerini yazar: 12 bayt, ilk bayt `02` açık, `03` kapalı (ardından kapatma zamanı). Hiçbir kayıt silinmez.
-- Tüm kullanıcılara ait (HKLM) öğeler `Gecit.exe --elevated startup <kaynak> <ad> on|off` ile değiştirilir. Yardımcı süreç yalnızca gerçekten var olan öğelere yazar ve kullanıcı öğelerini reddeder.
-- Ölçüm (`BootMeter`): Windows'un kendi açılış günlüğü yalnızca yöneticiye açık olduğu için Geçit kendisi ölçer. Başlangıç noktası explorer.exe'nin başlama zamanıdır (masaüstünün göründüğü an). İşlemci %25'in, disk %30'un altına inip 5 saniye öyle kalınca bilgisayar "kullanıma hazır" sayılır. Bu süre en fazla 3 dakikaya kadar ölçülür.
-- Program başına etki, masaüstünden 75 saniye sonra hesaplanır. Öğenin exe'siyle eşleşen ve oturum açıldıktan sonra başlamış süreçlerin, alt süreçleri de dahil olmak üzere, işlemci süresi (`GetProcessTimes`) ve G/Ç baytları (`GetProcessIoCounters`) toplanır. Eşikler Görev Yöneticisi'ninkilerdir: yüksek >1 sn işlemci ya da >3 MB, orta >300 ms ya da >300 KB.
-- Ölçüm, Geçit Windows'la açılıyorsa her açılışta kendiliğinden yapılır. Açılmıyorsa "Bir sonraki açılışta ölç" düğmesi `HKCU\...\RunOnce` altına tek seferlik `Gecit.exe --boot-measure` yazar. Bu komut pencere açmadan ölçer, sonucu bildirimle söyler ve kapanır. Son 12 ölçüm `%LOCALAPPDATA%\Gecit\boot-history.json` dosyasında tutulur. BIOS süresi, Windows'un kaydettiği `FwPOSTTime` değeridir.
-- Geliştirme sürümünde `GECIT_DESKTOP_AGO=<sn>` ortam değişkeni, masaüstü o kadar saniye önce açılmış gibi ölçüm başlatır, böylece yeniden başlatmadan test edilebilir. Doğrulandı: süreç başına işlemci süreleri `Get-Process` ile aynı çıktı.
+- The list is the same as Task Manager's Startup tab: HKCU/HKLM `Run`, `WOW6432Node\Run` and the two Startup folders. Turning items on/off writes the `Explorer\StartupApproved` value that Task Manager uses: 12 bytes, first byte `02` on, `03` off (followed by the time it was turned off). No entry is ever deleted.
+- Items for all users (HKLM) are changed with `Gecit.exe --elevated startup <source> <name> on|off`. The helper only writes to items that actually exist and refuses user items.
+- Measurement (`BootMeter`): Windows' own boot log is only open to administrators, so Geçit measures boot itself. The starting point is when explorer.exe starts (when the desktop appears). The PC counts as "ready to use" once CPU drops below 25% and disk below 30% and stays there for 5 seconds. This is measured for up to 3 minutes.
+- Per-program impact is calculated 75 seconds after the desktop appears. For processes matching the item's exe that started after sign-in, including their child processes, CPU time (`GetProcessTimes`) and I/O bytes (`GetProcessIoCounters`) are added up. The thresholds are Task Manager's: high >1 s CPU or >3 MB, medium >300 ms or >300 KB.
+- If Geçit starts with Windows, it measures on every boot by itself. If it doesn't, the "Measure on next boot" button writes a one-time `Gecit.exe --boot-measure` under `HKCU\...\RunOnce`. This command measures without opening a window, reports the result with a notification and exits. The last 12 measurements are kept in `%LOCALAPPDATA%\Gecit\boot-history.json`. BIOS time is the `FwPOSTTime` value Windows records.
+- In a development build, the `GECIT_DESKTOP_AGO=<sec>` environment variable starts a measurement as if the desktop had appeared that many seconds ago, so it can be tested without rebooting. Verified: per-process CPU times match `Get-Process`.
 
-### Güncelleme
+### Updates
 
-- `Updater` açılıştan 10 saniye sonra (oturum yeni açıldıysa 90 saniye sonra) ve 12 saatte bir `api.github.com/repos/Furkan-Erg/Gecit/releases/latest` adresine bakar. Ayarlar'dan kapatılabilir.
-- Yalnızca adı `Gecit-Setup-*.exe` olan ve GitHub'ın hesapladığı `sha256:` özeti bulunan bir dosya önerilir. Dosya `%LOCALAPPDATA%\Gecit\update` klasörüne iner. Özeti, salt okunur kilitli açık tutulurken kontrol edilir ve kurulum bu kilit altında başlatılır; kontrol ile çalıştırma arasında dosya değiştirilemez.
-- Kurulum `/SILENT /RELAUNCH=show|tray` ile **`runas` olmadan** başlatılır. Inno kendini yükseltir ve normal kullanıcıyı hatırlar, böylece yeniden açılan Geçit yönetici olmaz. `runas` ile başlatılsaydı yeni Geçit yönetici olarak açılırdı; testte görüldü ve düzeltildi. Kurulum, eski Geçit'i `--exit` ile kapatır. Hizmetleri durdurur, dosyaları değiştirir, hizmetleri yeniden başlatır ve uygulamayı geri açar.
-- Kurulumdaki `taskkill` yalnızca kullanıcı oturumlarına dokunur (`SESSION ne 0`). Oturum 0'daki `Gecit.exe`, GecitDNS hizmetidir ve düzgünce durdurulur.
-- Test için geliştirme sürümünde `GECIT_UPDATE_URL` ortam değişkeni sahte bir sürüm adresine yönlendirir. 2026-10-26'da şu testler yapıldı:
-  - Kurcalanmış özet reddedildi, kurulum çalışmadı.
-  - Gerçek güncelleme 14 saniye sürdü. Hizmetler yeniden başladı ve Geçit yöneticisiz olarak yeniden açıldı.
+- `Updater` checks `api.github.com/repos/Furkan-Erg/Gecit/releases/latest` 10 seconds after start (90 seconds if the session was just signed in) and every 12 hours. It can be turned off in Settings.
+- Only a file named `Gecit-Setup-*.exe` with a `sha256:` digest computed by GitHub is offered. The file is downloaded to `%LOCALAPPDATA%\Gecit\update`. Its checksum is checked while the file is held open with a read-only lock, and the installer is started under that lock, so the file can't be swapped between the check and the run.
+- The installer is started with `/SILENT /RELAUNCH=show|tray` **without `runas`**. Inno elevates itself and remembers the normal user, so the relaunched Geçit isn't running as admin. Started with `runas`, the new Geçit would have opened as admin; this was seen in testing and fixed. The installer closes the old Geçit with `--exit`. It stops the services, replaces the files, restarts the services and reopens the app.
+- The installer's `taskkill` only touches user sessions (`SESSION ne 0`). The `Gecit.exe` in session 0 is the GecitDNS service and is stopped cleanly.
+- For testing, the `GECIT_UPDATE_URL` environment variable points a development build to a fake release address. Tests done on 2026-10-26:
+  - A tampered checksum was rejected and the installer didn't run.
+  - A real update took 14 seconds. The services restarted and Geçit reopened without admin rights.
 
-### Demolar ve Bedava
+### Demos and Free Games
 
-- Hiçbir API anahtarı ya da hesap gerekmez; Steam ve Epic'in herkese açık mağaza verileri kullanılır (`src/Gecit/Store`).
-- Demolar: sıra Steam mağaza aramasından gelir (`category1=10`; yeni = `sort_by=Released_DESC`, yaklaşan = `filter=comingsoon`, oyuncu filtresi = `category3`: 9 co-op, 38 online co-op, 1 çok oyunculu). Ayrıntılar (resim, Türkçe etiketler, Türkçe dil desteği, Steam Deck uyumu, çıkış tarihi) `IStoreBrowseService/GetItems` ile hem demodan hem de ana oyundan alınır.
-- Takip edilen demolara 2 saatte bir, duyurulan saati geçmiş bir demo varsa 10 dakikada bir bakılır. Geliştirici tarihi değiştirirse kayıtlı tarih de güncellenir.
-- Bedava: Epic'in `freeGamesPromotions` verisinde fiyatı %0'a inen kampanyalar (şimdiki ve gelecek hafta). Steam'de ise indirimdekiler fiyata göre sıralanıp `best_purchase_option.is_free_to_keep` olanlar alınır. Free-to-play oyunlar ve hafta sonu bedava etkinlikleri kalıcı olmadığı için listede yoktur.
-- Yeni bedava oyun için bildirim 3 saatte bir, bir kampanya başlayıp biterken ise 10 dakikada bir kontrol edilir. DLC'ler için bildirim gösterilmez.
+- No API key or account needed; Steam's and Epic's public store data is used (`src/Gecit/Store`).
+- Demos: the order comes from Steam store search (`category1=10`; new = `sort_by=Released_DESC`, upcoming = `filter=comingsoon`, player filter = `category3`: 9 co-op, 38 online co-op, 1 multiplayer). Details (image, tags, language support, Steam Deck compatibility, release date) are fetched with `IStoreBrowseService/GetItems` for both the demo and the main game.
+- Followed demos are checked every 2 hours, or every 10 minutes if an announced time has passed. If the developer changes the date, the saved date is updated too.
+- Free Games: campaigns in Epic's `freeGamesPromotions` data whose price drops to 0% (this week and next). On Steam, discounted items are sorted by price and the ones with `best_purchase_option.is_free_to_keep` are kept. Free-to-play games and free weekends are left out because they aren't yours to keep.
+- New giveaways are checked every 3 hours, or every 10 minutes around the start and end of a campaign. No notifications for DLC.
 
-## Üçüncü taraf dosyalar
+## Third-party files
 
-`third_party/goodbyedpi/`, [GoodbyeDPI-Turkey](https://github.com/cagritaskn/GoodbyeDPI-Turkey) `release-0.2.3rc3-turkey` sürümünün x86_64 dosyalarıdır. 2026-10-26'da doğrulandı:
+`third_party/goodbyedpi/` contains the x86_64 files of [GoodbyeDPI-Turkey](https://github.com/cagritaskn/GoodbyeDPI-Turkey) release `release-0.2.3rc3-turkey`. Verified on 2026-10-26:
 
-| Dosya | SHA-256 | Not |
+| File | SHA-256 | Note |
 |---|---|---|
-| goodbyedpi.exe | `8d412b09…c430dd1f` | Importları yalnızca WinDivert, CryptGenRandom, servis API'si, CRT, ws2_32. Ağ istemcisi, süreç başlatma ya da kayıt defteri yazma yok. Stringler 0.2.3rc3 kaynağıyla birebir aynı. |
-| WinDivert.dll | `6110bfa4…5e6c7e` | Resmî WinDivert 2.2.0-C ile birebir aynı. |
-| WinDivert64.sys | `e69b5ba3…e82cf50` | 2.2.0-D sürümü, Cloudveil Technology imzası geçerli. |
+| goodbyedpi.exe | `8d412b09…c430dd1f` | Imports only WinDivert, CryptGenRandom, the service API, the CRT and ws2_32. No network client, no process launching, no registry writes. Strings match the 0.2.3rc3 source exactly. |
+| WinDivert.dll | `6110bfa4…5e6c7e` | Identical to the official WinDivert 2.2.0-C. |
+| WinDivert64.sys | `e69b5ba3…e82cf50` | Version 2.2.0-D, valid Cloudveil Technology signature. |
 
-WinDivert 2.2.2 Windows Defender tarafından `Misleading:Win32/Malgent!AMTB` olarak işaretleniyor, 2.2.0 işaretlenmiyor. Bu yüzden 2.2.0 kullanılıyor.
+Windows Defender flags WinDivert 2.2.2 as `Misleading:Win32/Malgent!AMTB` but not 2.2.0. That is why 2.2.0 is used.
 
-Lisanslar `third_party/goodbyedpi/licenses/` içinde: GoodbyeDPI Apache 2.0, WinDivert LGPLv3.
+Licenses are in `third_party/goodbyedpi/licenses/`: GoodbyeDPI Apache 2.0, WinDivert LGPLv3.
 
-`src/Gecit/Assets/oui.txt.gz`: IEEE MAC adres blokları kaydından (MA-L/MA-M/MA-S) türetilmiştir. Kaynak olarak Wireshark'ın `manuf` kopyası kullanılır, dosya `tools/build-oui.ps1` ile üretilir.
+`src/Gecit/Assets/oui.txt.gz`: derived from the IEEE MAC address block registry (MA-L/MA-M/MA-S). Wireshark's `manuf` copy is used as the source; the file is generated with `tools/build-oui.ps1`.
 
-## Lisans
+## License
 
-Geçit'in kendi kodu [GPL-3.0](LICENSE) lisanslıdır. Üçüncü taraf dosyalar kendi lisanslarıyla gelir (yukarıda).
+Geçit's own code is licensed under [GPL-3.0](LICENSE). Third-party files come with their own licenses (above).
 
-## Uyarı
+## Disclaimer
 
-Geçit bir VPN değildir. Kimliğini gizlemez, sadece operatörün DPI ve DNS engellerini aşar. Kullanımdan doğan sorumluluk kullanıcıya aittir.
+Geçit is not a VPN. It does not hide your identity; it only gets around your ISP's DPI and DNS blocks. You are responsible for how you use it.
