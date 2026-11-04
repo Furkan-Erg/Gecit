@@ -26,7 +26,7 @@ Opens sites blocked by your ISP (Discord, Roblox, Wattpad…) with **one click**
 
 The unblocking methods are tuned for ISPs in Turkey (built on [GoodbyeDPI-Turkey](https://github.com/cagritaskn/GoodbyeDPI-Turkey)). Everything else in Geçit works anywhere.
 
-![Geçit: Unblock is on, the connection test shows Discord, Roblox and Wattpad opening](docs/screenshots/dpi.png)
+![Geçit: Unblock is on, the connection test shows Discord, Roblox and Wattpad opening](docs/screenshots/en/dpi.png)
 
 <table>
 <tr>
@@ -44,8 +44,8 @@ A tabbed browser that **leaves no trace**. When the window closes, history, cook
 </td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/dns.png" alt="Smart DNS"></td>
-<td><img src="docs/screenshots/browser.png" alt="Private Browser"></td>
+<td><img src="docs/screenshots/en/dns.png" alt="Smart DNS"></td>
+<td><img src="docs/screenshots/en/browser.png" alt="Private Browser"></td>
 </tr>
 <tr>
 <td width="50%" valign="top">
@@ -62,8 +62,8 @@ A second-by-second **ping graph**, both to the internet and to your router, so y
 </td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/game.png" alt="Game Mode"></td>
-<td><img src="docs/screenshots/net.png" alt="Internet"></td>
+<td><img src="docs/screenshots/en/game.png" alt="Game Mode"></td>
+<td><img src="docs/screenshots/en/net.png" alt="Internet"></td>
 </tr>
 <tr>
 <td width="50%" valign="top">
@@ -80,8 +80,8 @@ Lists **every device** on your router: phones, TVs, computers… Finds the maker
 </td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/lan.png" alt="My Network"></td>
-<td><img src="docs/screenshots/demos.png" alt="Demos"></td>
+<td><img src="docs/screenshots/en/lan.png" alt="My Network"></td>
+<td><img src="docs/screenshots/en/demos.png" alt="Demos"></td>
 </tr>
 <tr>
 <td width="50%" valign="top">
@@ -98,8 +98,8 @@ Shows the programs that start with Windows and **how much each one slows down bo
 </td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/free.png" alt="Free Games"></td>
-<td><img src="docs/screenshots/boot.png" alt="Startup"></td>
+<td><img src="docs/screenshots/en/free.png" alt="Free Games"></td>
+<td><img src="docs/screenshots/en/boot.png" alt="Startup"></td>
 </tr>
 </table>
 
@@ -110,7 +110,7 @@ Shows the programs that start with Windows and **how much each one slows down bo
 - **Clean uninstall**: your DNS settings go back to what they were, and the services and driver are removed.
 - **Two languages**: English and Turkish. Follows your Windows language by default; you can change it in Settings.
 
-> The screenshots were taken with v0.7.0 on a Türk Telekom Ethernet connection, with the Turkish interface. The second half of each MAC address is hidden on the My Network screen.
+> The screenshots were taken with v0.8.0 on a Türk Telekom Wi-Fi connection. On the My Network screen, personal device names were replaced and the second half of each MAC address is hidden.
 
 ### Version history
 
