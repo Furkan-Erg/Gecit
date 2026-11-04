@@ -6,3 +6,6 @@ installer/MicrosoftEdgeWebview2Setup.exe
 .vs/
 *.user
 *.suo
+
+# agentkit görev çıktıları (rapor, diff, denetim günlüğü)
+/tasks/
