@@ -123,6 +123,7 @@ Shows the programs that start with Windows and **how much each one slows down bo
 | Internet (ping, speed test, per-app traffic) | v0.5 |
 | My Network, Startup, in-app updates | v0.6 |
 | Demos, Free Games | v0.7 |
+| English interface | v0.8 |
 
 ## Download
 

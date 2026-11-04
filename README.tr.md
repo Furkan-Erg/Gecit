@@ -119,6 +119,7 @@ Windows açılırken başlayan programları ve **açılışı ne kadar yavaşlat
 | İnternet (ping, hız testi, uygulama başına trafik) | v0.5 |
 | Ağım, Açılış, uygulama içi güncelleme | v0.6 |
 | Demolar, Bedava | v0.7 |
+| İngilizce arayüz | v0.8 |
 
 ## İndir
 
