@@ -1,0 +1,14 @@
+﻿WHAT YOU SHOULD KNOW ABOUT GEÇİT
+
+Geçit brings these tools together: unblocking, smart/encrypted DNS, a private browser, game mode and internet measurements.
+
+UNBLOCKING
+- It uses the open-source GoodbyeDPI (Apache 2.0) and WinDivert (LGPLv3). WinDivert is a network driver. Some antivirus programs (Kaspersky in particular) may wrongly flag it as dangerous.
+- Geçit is NOT a VPN. It doesn't hide your identity or your IP address; it only gets around your ISP's DPI and DNS blocks.
+- You are solely responsible for any legal consequences of using it.
+
+ADMIN PERMISSION
+- Unblocking, encrypted DNS and per-app traffic monitoring need Windows services and drivers, so these ask for admin permission once.
+- When you remove Geçit with "Settings > Remove Geçit from the system" or from Control Panel, the services are deleted and your DNS settings go back to how they were before Geçit.
+
+This software isn't code-signed, so Windows may show a "Windows protected your PC" warning. To continue, click "More info" > "Run anyway".

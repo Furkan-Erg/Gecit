@@ -25,7 +25,10 @@ static class SiteProbe
 
     public static bool IsBlockPage(IPAddress ip) => BlockPageIps.Contains(ip);
 
-    public static Task<ProbeResult[]> RunAllAsync() => Task.WhenAll(Targets.Select(t => RunAsync(t.Name, t.Host)));
+    // Names and details below are the Turkish source texts; translated here, on the way to the UI.
+    public static async Task<ProbeResult[]> RunAllAsync() =>
+        (await Task.WhenAll(Targets.Select(t => RunAsync(t.Name, t.Host))))
+            .Select(r => r with { Name = L.T(r.Name), Detail = L.T(r.Detail) }).ToArray();
 
     static async Task<ProbeResult> RunAsync(string name, string host)
     {

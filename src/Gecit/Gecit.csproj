@@ -18,8 +18,8 @@
     <SelfContained>false</SelfContained>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
-    <!-- The UI is Turkish; skip the framework's other translations in the package. -->
-    <SatelliteResourceLanguages>tr</SatelliteResourceLanguages>
+    <!-- The UI is Turkish or English (L.cs, wwwroot/i18n/en.json); skip the framework's other translations. -->
+    <SatelliteResourceLanguages>tr;en</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <!-- The WebView2 package also references its WPF control; this is a WinForms app. -->

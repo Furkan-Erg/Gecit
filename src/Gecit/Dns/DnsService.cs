@@ -102,7 +102,7 @@ static partial class DnsService
         }
         catch (Exception e)
         {
-            return new(p.Id, null, null, e is OperationCanceledException ? "Zaman aşımı" : e.GetBaseException().Message);
+            return new(p.Id, null, null, e is OperationCanceledException ? L.T("Zaman aşımı") : e.GetBaseException().Message);
         }
     }
 

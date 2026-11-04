@@ -32,7 +32,7 @@ static class SystemDns
     {
         var adapters = Adapters();
         if (adapters.Count == 0)
-            throw new InvalidOperationException("İnternete bağlı ağ bağdaştırıcısı bulunamadı.");
+            throw new InvalidOperationException(L.T("İnternete bağlı ağ bağdaştırıcısı bulunamadı."));
         Backup(adapters);
         foreach (var a in adapters)
         {

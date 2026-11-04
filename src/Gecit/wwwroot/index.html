@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Geçit</title>
   <link rel="stylesheet" href="app.css">
+  <script src="i18n.js"></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -469,6 +470,19 @@
           </div>
           <input type="checkbox" class="switch" id="update-auto">
         </label>
+      </div>
+      <div class="card rows">
+        <div class="row">
+          <div>
+            <div class="row-title" translate="no">Dil / Language</div>
+            <div class="row-sub">Otomatik: Windows'un dili Türkçe ise Türkçe, değilse İngilizce.</div>
+          </div>
+          <div class="chips" id="language">
+            <button class="chip" data-language="auto">Otomatik (Windows dili)</button>
+            <button class="chip" data-language="tr" translate="no">Türkçe</button>
+            <button class="chip" data-language="en" translate="no">English</button>
+          </div>
+        </div>
       </div>
       <div class="card rows">
         <label class="row">

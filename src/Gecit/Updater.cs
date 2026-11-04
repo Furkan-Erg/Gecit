@@ -39,7 +39,7 @@ static class Updater
     public static async Task<UpdateInfo?> CheckAsync(CancellationToken ct = default)
     {
         var rel = await http.GetFromJsonAsync<Release>(LatestUrl, Json, ct)
-                  ?? throw new InvalidOperationException("GitHub'dan boş yanıt geldi.");
+                  ?? throw new InvalidOperationException(L.T("GitHub'dan boş yanıt geldi."));
         if (rel.Draft || rel.Prerelease || !Version.TryParse(rel.TagName.TrimStart('v', 'V'), out var v) || v <= Current)
             return null;
         var asset = rel.Assets.FirstOrDefault(a => a.Name.StartsWith("Gecit-Setup-", StringComparison.OrdinalIgnoreCase)
@@ -83,7 +83,7 @@ static class Updater
         {
             locked.Dispose();
             File.Delete(path);
-            throw new InvalidOperationException("İndirilen dosya doğrulanamadı (SHA-256 tutmuyor). Tekrar dene.");
+            throw new InvalidOperationException(L.T("İndirilen dosya doğrulanamadı (SHA-256 tutmuyor). Tekrar dene."));
         }
         // Not "runas": the setup elevates itself and remembers this unelevated user, so the relaunched
         // Geçit ("runasoriginaluser" in gecit.iss) isn't an admin process. Started elevated, it would be.
@@ -94,7 +94,7 @@ static class Updater
         try { Process.Start(psi)?.Dispose(); }
         catch (Win32Exception e)
         {
-            throw new InvalidOperationException("Kurulum başlatılamadı: " + e.Message);
+            throw new InvalidOperationException(L.T("Kurulum başlatılamadı: {reason}", ("reason", e.Message)));
         }
     }
 

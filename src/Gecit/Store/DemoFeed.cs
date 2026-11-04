@@ -20,23 +20,32 @@ static partial class DemoFeed
 {
     const string SearchUrl = "https://store.steampowered.com/search/results/";
     const string ItemsUrl = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/";
-    const string TagsUrl = "https://api.steampowered.com/IStoreService/GetTagList/v1/?language=turkish";
+    const string TagsUrl = "https://api.steampowered.com/IStoreService/GetTagList/v1/?language=";
     const string AssetBase = "https://shared.fastly.steamstatic.com/store_item_assets/";
     const int PageSize = 30;
     const int TurkishLanguage = 21;   // ELanguage
     static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(20);
-    static readonly CultureInfo Tr = CultureInfo.GetCultureInfo("tr-TR");
 
-    internal static readonly HttpClient http = CreateClient();
+    static readonly HttpClient http = CreateClient();
+    // Keyed by UI language too: the store answers in that language.
     static readonly Dictionary<string, DemoPage> cache = [];
-    static Dictionary<int, string>? tagNames;
+    static readonly Dictionary<string, Dictionary<int, string>> tagNames = [];
 
     static HttpClient CreateClient()
     {
         var c = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
         c.DefaultRequestHeaders.UserAgent.ParseAdd($"Mozilla/5.0 Gecit/{Updater.Current}");
-        c.DefaultRequestHeaders.AcceptLanguage.ParseAdd("tr-TR,tr;q=0.9");
         return c;
+    }
+
+    // Store pages and APIs in the UI language; prices stay in the Turkish region (cc=tr / country_code=TR).
+    internal static async Task<string> FetchAsync(string url, CancellationToken ct)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.AcceptLanguage.ParseAdd(L.IsEnglish ? "en-US,en;q=0.9" : "tr-TR,tr;q=0.9");
+        using var resp = await http.SendAsync(req, ct);
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadAsStringAsync(ct);
     }
 
     [GeneratedRegex("data-ds-appid=\"(\\d+)")]
@@ -61,12 +70,12 @@ static partial class DemoFeed
             _ => throw new InvalidOperationException($"Bilinmeyen liste: {list}"),
         };
         string filter = PlayerFilters.GetValueOrDefault(players) ?? throw new InvalidOperationException($"Bilinmeyen filtre: {players}");
-        string key = $"{list}|{players}|{start}";
+        string key = $"{L.Lang}|{list}|{players}|{start}";
         if (!refresh && cache.TryGetValue(key, out var hit) && DateTime.Now - hit.At < CacheFor)
             return hit;
 
-        var root = JsonNode.Parse(await http.GetStringAsync(
-            $"{SearchUrl}?query&start={start}&count={PageSize}&category1=10{order}{filter}&cc=tr&l=turkish&infinite=1", ct));
+        var root = JsonNode.Parse(await FetchAsync(
+            $"{SearchUrl}?query&start={start}&count={PageSize}&category1=10{order}{filter}&cc=tr&l={L.SteamLanguage}&infinite=1", ct));
         int total = root?["total_count"]?.GetValue<int>() ?? 0;
         var ids = AppIds(root);
 
@@ -111,10 +120,10 @@ static partial class DemoFeed
             string input = JsonSerializer.Serialize(new
             {
                 ids = chunk.Select(id => new { appid = id }),
-                context = new { language = "turkish", country_code = "TR" },
+                context = new { language = L.SteamLanguage, country_code = "TR" },
                 data_request = dataRequest,
             });
-            var root = JsonNode.Parse(await http.GetStringAsync(ItemsUrl + "?input_json=" + Uri.EscapeDataString(input), ct));
+            var root = JsonNode.Parse(await FetchAsync(ItemsUrl + "?input_json=" + Uri.EscapeDataString(input), ct));
             foreach (var item in root?["response"]?["store_items"]?.AsArray() ?? [])
                 if (item?["success"]?.GetValue<int>() == 1 && item["appid"]?.GetValue<int>() is int id)
                     result[id] = item;
@@ -124,12 +133,13 @@ static partial class DemoFeed
 
     static async Task<Dictionary<int, string>> TagNamesAsync(CancellationToken ct)
     {
-        if (tagNames is not null)
-            return tagNames;
+        string language = L.SteamLanguage;
+        if (tagNames.TryGetValue(language, out var known))
+            return known;
         try
         {
-            var root = JsonNode.Parse(await http.GetStringAsync(TagsUrl, ct));
-            tagNames = (root?["response"]?["tags"]?.AsArray() ?? [])
+            var root = JsonNode.Parse(await FetchAsync(TagsUrl + language, ct));
+            return tagNames[language] = (root?["response"]?["tags"]?.AsArray() ?? [])
                 .Where(t => t?["tagid"] is not null && t["name"] is not null)
                 .ToDictionary(t => t!["tagid"]!.GetValue<int>(), t => t!["name"]!.GetValue<string>());
         }
@@ -137,7 +147,6 @@ static partial class DemoFeed
         {
             return [];   // tags are a nicety; try again next time
         }
-        return tagNames;
     }
 
     static Demo Build(int id, JsonNode demo, JsonNode? game, Dictionary<int, string> tags)
@@ -173,6 +182,7 @@ static partial class DemoFeed
 
     // Steam player categories: 1 multiplayer, 9 co-op, 38 online co-op, 39 split-screen co-op.
     // The demo's own list first: that's what you'll play (and what the store search filters on).
+    // Turkish source names, also saved with watched demos: the page translates them when it shows them.
     internal static string[] Players(JsonNode? item)
     {
         var ids = (item?["categories"]?["supported_player_categoryids"]?.AsArray() ?? [])
@@ -206,12 +216,12 @@ static partial class DemoFeed
             return custom;
         return (Str(release, "coming_soon_display"), d) switch
         {
-            ("date_full", { } x) => x.ToString("d MMMM yyyy", Tr),
-            ("date_month", { } x) => x.ToString("MMMM yyyy", Tr),
-            ("date_quarter", { } x) => $"{x.Year} {(x.Month + 2) / 3}. çeyrek",
+            ("date_full", { } x) => x.ToString(L.IsEnglish ? "MMMM d, yyyy" : "d MMMM yyyy", L.Culture),
+            ("date_month", { } x) => x.ToString("MMMM yyyy", L.Culture),
+            ("date_quarter", { } x) => L.T("{year} {q}. çeyrek", ("year", x.Year.ToString(CultureInfo.InvariantCulture)), ("q", (x.Month + 2) / 3)),
             ("date_year", { } x) => x.Year.ToString(CultureInfo.InvariantCulture),
-            ("text_tba", _) => "Duyurulacak",
-            _ => "Pek yakında",
+            ("text_tba", _) => L.T("Duyurulacak"),
+            _ => L.T("Pek yakında"),
         };
     }
 

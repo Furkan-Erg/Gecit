@@ -37,6 +37,7 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("active", b === btn));
     document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === "page-" + btn.dataset.page));
+    sessionStorage.setItem("page", btn.dataset.page);   // kept when the page reloads for a language change
   });
 });
 
@@ -49,11 +50,11 @@ document.addEventListener("click", (e) => {
 
 // ---- Rendering ----
 const STATUS = {
-  notinstalled: ["Kapalı", "Açmak için düğmeye bas. İlk açılışta hizmet bir kez kurulur (yönetici izni ister)."],
-  stopped: ["Kapalı", "Engelli siteler şu an açılmaz. Açmak için düğmeye bas."],
-  starting: ["Başlatılıyor…", "WinDivert sürücüsü yükleniyor."],
-  stopping: ["Durduruluyor…", ""],
-  running: ["Açık", "Engelli siteler açılıyor. Pencereyi kapatsan bile arka planda çalışmaya devam eder."],
+  notinstalled: [t("Kapalı"), t("Açmak için düğmeye bas. İlk açılışta hizmet bir kez kurulur (yönetici izni ister).")],
+  stopped: [t("Kapalı"), t("Engelli siteler şu an açılmaz. Açmak için düğmeye bas.")],
+  starting: [t("Başlatılıyor…"), t("WinDivert sürücüsü yükleniyor.")],
+  stopping: [t("Durduruluyor…"), ""],
+  running: [t("Açık"), t("Engelli siteler açılıyor. Pencereyi kapatsan bile arka planda çalışmaya devam eder.")],
 };
 
 function render(s) {
@@ -64,25 +65,25 @@ function render(s) {
 
   $("hero").dataset.state = heroState;
   const [title, detail] = d.busy && d.state !== "running"
-    ? ["Hazırlanıyor…", "Hizmet kuruluyor veya başlatılıyor."]
+    ? [t("Hazırlanıyor…"), t("Hizmet kuruluyor veya başlatılıyor.")]
     : STATUS[d.state] ?? STATUS.stopped;
   $("hero-status").textContent = title;
   $("hero-detail").textContent = detail;
   $("power").disabled = busy;
 
   const preset = s.presets.find((p) => p.id === s.presetId);
-  $("hero-preset").textContent = preset ? "Yöntem: " + preset.name : "";
-  $("hero-dns").textContent = s.dns.mode === "auto" ? "DNS: Yandex yönlendirmesi" : "DNS: Akıllı DNS";
+  $("hero-preset").textContent = preset ? t("Yöntem: {name}", { name: preset.name }) : "";
+  $("hero-dns").textContent = s.dns.mode === "auto" ? t("DNS: Yandex yönlendirmesi") : t("DNS: Akıllı DNS");
 
   const pill = $("side-pill");
   pill.classList.toggle("on", d.state === "running");
   pill.classList.toggle("busy", busy);
-  $("side-pill-text").textContent = busy ? "bekle" : d.state === "running" ? "açık" : "kapalı";
+  $("side-pill-text").textContent = busy ? t("bekle") : d.state === "running" ? t("açık") : t("kapalı");
 
   const banner = $("conflict-banner");
   banner.hidden = d.conflicts.length === 0;
   banner.textContent = d.conflicts.length
-    ? `Başka bir engel aşma aracı çalışıyor (${d.conflicts.join(", ")}). İkisi aynı anda çalışırsa ikisi de bozulur; önce onu kapat veya kaldır.`
+    ? t("Başka bir engel aşma aracı çalışıyor ({tools}). İkisi aynı anda çalışırsa ikisi de bozulur; önce onu kapat veya kaldır.", { tools: d.conflicts.join(", ") })
     : "";
 
   renderPresets(s, busy);
@@ -93,6 +94,7 @@ function render(s) {
   $("uninstall").disabled = s.busy;
   $("version").textContent = "v" + s.version;
   $("lan-watch").checked = s.lanWatch;
+  document.querySelectorAll("#language .chip").forEach((c) => c.classList.toggle("selected", c.dataset.language === s.language));
   renderUpdate(s.update);
 }
 
@@ -106,10 +108,11 @@ function renderPresets(s, busy) {
       <div class="preset-top">
         <span class="preset-radio"></span>
         <span class="preset-name"></span>
-        ${i === 0 ? '<span class="preset-badge">önerilen</span>' : ""}
+        ${i === 0 ? '<span class="preset-badge"></span>' : ""}
       </div>
       <div class="preset-desc"></div>
       <div class="preset-args"></div>`;
+    if (i === 0) el.querySelector(".preset-badge").textContent = t("önerilen");
     el.querySelector(".preset-name").textContent = p.name;
     el.querySelector(".preset-desc").textContent = p.description;
     el.querySelector(".preset-args").textContent = p.args;
@@ -126,7 +129,7 @@ $("power").addEventListener("click", async () => {
   const on = state?.dpi.state !== "running";
   try {
     render(await call("dpi.set", { on }));
-    if (on && state.dpi.state === "running") toast("Engel aşma açık.", "ok");
+    if (on && state.dpi.state === "running") toast(t("Engel aşma açık."), "ok");
   } catch (e) {
     toast(e.message, "error");
   }
@@ -136,18 +139,25 @@ $("autostart").addEventListener("change", (e) => {
   call("app.autostart", { on: e.target.checked }).then(render, (err) => toast(err.message, "error"));
 });
 
+document.querySelectorAll("#language .chip").forEach((c) =>
+  c.addEventListener("click", () => {
+    if (c.classList.contains("selected")) return;
+    // The host reloads the page when the language really changes; otherwise only the choice is shown.
+    call("app.language", { language: c.dataset.language }).then(render, (e) => toast(e.message, "error"));
+  }));
+
 $("uninstall").addEventListener("click", async () => {
-  if (!confirm("Geçit'in hizmetleri kaldırılsın ve DNS ayarların eski haline getirilsin mi?")) return;
+  if (!confirm(t("Geçit'in hizmetleri kaldırılsın ve DNS ayarların eski haline getirilsin mi?"))) return;
   try {
     render(await call("app.uninstall"));
-    toast("Geçit sistemden temizlendi.", "ok");
+    toast(t("Geçit sistemden temizlendi."), "ok");
   } catch (e) {
     toast(e.message, "error");
   }
 });
 
 // ---- Akıllı DNS ----
-const MODE_NAMES = { auto: "Otomatik", plain: "Hızlı DNS", doh: "Şifreli DNS" };
+const MODE_NAMES = { auto: t("Otomatik"), plain: t("Hızlı DNS"), doh: t("Şifreli DNS") };
 let dnsSel = null;          // what the user picked on the page: { mode, provider }
 let bench = null;           // id -> { pingMs, dohMs, error }
 let diagnosis = null;
@@ -162,7 +172,7 @@ function renderDns(s) {
 
   $("dns-status").dataset.mode = cur.mode;
   $("dns-current").textContent = cur.mode === "auto"
-    ? "Otomatik (modem / operatör)"
+    ? t("Otomatik (modem / operatör)")
     : `${MODE_NAMES[cur.mode]} · ${providerName(cur.providerId)}`;
   $("dns-servers").textContent = cur.adapters.map((a) => `${a.name}: ${a.servers.join(", ") || "—"}`).join("   ");
 
@@ -177,10 +187,10 @@ function renderDns(s) {
   const changed = dnsSel.mode !== cur.mode || (dnsSel.mode !== "auto" && dnsSel.provider !== cur.providerId);
   $("dns-apply-bar").hidden = !changed;
   $("dns-apply").disabled = s.busy;
-  $("dns-apply").textContent = s.busy ? "Uygulanıyor…" : "Uygula";
+  $("dns-apply").textContent = s.busy ? t("Uygulanıyor…") : t("Uygula");
   $("dns-apply-text").textContent = dnsSel.mode === "auto"
-    ? "Otomatik DNS'e dön"
-    : `${MODE_NAMES[dnsSel.mode]} · ${providerName(dnsSel.provider)} kullan`;
+    ? t("Otomatik DNS'e dön")
+    : t("{mode} · {provider} kullan", { mode: MODE_NAMES[dnsSel.mode], provider: providerName(dnsSel.provider) });
 }
 
 function renderProviders(s) {
@@ -196,15 +206,17 @@ function renderProviders(s) {
     el.innerHTML = `
       <span class="preset-radio"></span>
       <span class="prov-name"><span class="n"></span><small></small></span>
-      <span class="prov-tag"><span class="t"></span>${p.id === fastest ? '<span class="fast">en hızlı</span>' : ""}</span>
+      <span class="prov-tag"><span class="t"></span>${p.id === fastest ? '<span class="fast"></span>' : ""}</span>
       <span class="metric ping"><small>ping</small><span class="v"></span></span>
-      <span class="metric doh"><small>sorgu</small><span class="v"></span></span>`;
+      <span class="metric doh"><small></small><span class="v"></span></span>`;
     el.querySelector(".n").textContent = p.name;
     el.querySelector("small").textContent = p.servers.join(" · ");
     el.querySelector(".t").textContent = p.tag;
+    el.querySelector(".fast")?.append(t("en hızlı"));
+    el.querySelector(".doh small").textContent = t("sorgu");
     const fmt = (v) => (v == null ? "—" : v + " ms");
     el.querySelector(".ping .v").textContent = b ? fmt(b.pingMs) : "…";
-    el.querySelector(".doh .v").textContent = b ? (b.error ? "hata" : fmt(b.dohMs)) : "…";
+    el.querySelector(".doh .v").textContent = b ? (b.error ? t("hata") : fmt(b.dohMs)) : "…";
     if (b?.error) {
       el.querySelector(".doh").classList.add("err");
       el.title = b.error;
@@ -220,19 +232,28 @@ function renderProviders(s) {
 function renderChecks() {
   const box = $("dns-checks");
   if (!diagnosis) return;
-  const row = (cls, html) => `<div class="check ${cls}"><span class="dot"></span><span>${html}</span></div>`;
+  // <div class="check …"><span class="dot"></span><span><b>title</b> text</span></div>
+  const row = (cls, title, text) => {
+    const el = document.createElement("div");
+    el.className = "check " + cls;
+    const body = document.createElement("span");
+    if (title) body.append(Object.assign(document.createElement("b"), { textContent: title }), " ");
+    body.append(text);
+    el.append(Object.assign(document.createElement("span"), { className: "dot" }), body);
+    return el;
+  };
   const parts = [
     diagnosis.systemDnsBlocked
-      ? row("bad", "<b>DNS engeli var:</b> Discord sahte adrese yönleniyor")
-      : row("ok", "<b>DNS engeli yok:</b> engelli siteler doğru adrese çözülüyor"),
+      ? row("bad", t("DNS engeli var:"), t("Discord sahte adrese yönleniyor"))
+      : row("ok", t("DNS engeli yok:"), t("engelli siteler doğru adrese çözülüyor")),
   ];
   if (diagnosis.ispHijacksPort53 === true)
-    parts.push(row("bad", "<b>Operatör DNS'e müdahale ediyor:</b> Hızlı DNS yetmez, Şifreli DNS kullan"));
+    parts.push(row("bad", t("Operatör DNS'e müdahale ediyor:"), t("Hızlı DNS yetmez, Şifreli DNS kullan")));
   else if (diagnosis.ispHijacksPort53 === false)
-    parts.push(row("ok", "<b>Operatör DNS'e karışmıyor:</b> Hızlı DNS de engeli aşar"));
+    parts.push(row("ok", t("Operatör DNS'e karışmıyor:"), t("Hızlı DNS de engeli aşar")));
   else
-    parts.push(row("warn", "Operatör müdahalesi test edilemedi (engel aşmanın DNS yönlendirmesi açık)"));
-  box.innerHTML = parts.join("");
+    parts.push(row("warn", null, t("Operatör müdahalesi test edilemedi (engel aşmanın DNS yönlendirmesi açık)")));
+  box.replaceChildren(...parts);
 }
 
 async function runDiagnosis() {
@@ -247,7 +268,7 @@ async function runDiagnosis() {
 async function runBench() {
   const btn = $("dns-bench");
   btn.disabled = true;
-  btn.textContent = "Ölçülüyor…";
+  btn.textContent = t("Ölçülüyor…");
   bench = null;
   renderDns(state);
   try {
@@ -258,7 +279,7 @@ async function runBench() {
     toast(e.message, "error");
   } finally {
     btn.disabled = false;
-    btn.textContent = "Hızları ölç";
+    btn.textContent = t("Hızları ölç");
   }
 }
 
@@ -283,10 +304,11 @@ $("dns-apply").addEventListener("click", async () => {
 // ---- Gizli Tarayıcı ----
 function renderBrowser(b) {
   document.querySelector(".browser-hero").dataset.state = b.open ? "running" : "stopped";
-  $("browser-status").textContent = b.open ? "Açık" : "Kapalı";
-  $("browser-open").textContent = b.open ? "Pencereye git" : "Gizli pencere aç";
-  const date = b.listDate ? new Date(b.listDate).toLocaleDateString("tr-TR") : null;
-  $("browser-list").textContent = b.listCount.toLocaleString("tr-TR") + " alan adı" + (date ? `, liste ${date}` : "");
+  $("browser-status").textContent = b.open ? t("Açık") : t("Kapalı");
+  $("browser-open").textContent = b.open ? t("Pencereye git") : t("Gizli pencere aç");
+  const date = b.listDate ? new Date(b.listDate).toLocaleDateString(LOCALE) : null;
+  const count = b.listCount.toLocaleString(LOCALE);
+  $("browser-list").textContent = date ? t("{n} alan adı, liste {date}", { n: count, date }) : t("{n} alan adı", { n: count });
   $("browser-adblock").checked = b.adblock;
   $("browser-engines").replaceChildren(...b.engines.map((e) => {
     const chip = document.createElement("button");
@@ -300,7 +322,7 @@ function renderBrowser(b) {
 $("browser-open").addEventListener("click", () => call("browser.open"));
 $("browser-adblock").addEventListener("change", (e) => call("browser.settings", { adblock: e.target.checked }).then(render));
 $("browser-shortcut").addEventListener("click", () =>
-  call("browser.shortcut").then(() => toast("Masaüstüne \"Gizli Tarayıcı\" kısayolu eklendi.", "ok"), (e) => toast(e.message, "error")));
+  call("browser.shortcut").then(() => toast(t("Masaüstüne \"Gizli Tarayıcı\" kısayolu eklendi."), "ok"), (e) => toast(e.message, "error")));
 
 // ---- Oyun Modu ----
 const gb = (bytes) => (bytes / 1024 ** 3).toFixed(1);
@@ -313,30 +335,30 @@ function minutesSince(iso) {
 function renderGame(g) {
   const a = g.active;
   $("game-hero").dataset.state = a ? "active" : "idle";
-  $("game-status").textContent = a ? (a.manual ? "Açık" : a.name) : "Beklemede";
+  $("game-status").textContent = a ? (a.manual ? t("Açık") : a.name) : t("Beklemede");
   $("game-detail").textContent = a
-    ? `${minutesSince(a.started)} dakikadır açık. Oyun kapanınca (ya da düğmeye basınca) her şey eski haline döner.`
+    ? t("{n} dakikadır açık. Oyun kapanınca (ya da düğmeye basınca) her şey eski haline döner.", { n: minutesSince(a.started) })
     : g.settings.autoDetect
-      ? "Bir oyun açıldığında kendiliğinden başlar. Şimdi açmak için düğmeye bas."
-      : "Otomatik algılama kapalı. Açmak için düğmeye bas.";
+      ? t("Bir oyun açıldığında kendiliğinden başlar. Şimdi açmak için düğmeye bas.")
+      : t("Otomatik algılama kapalı. Açmak için düğmeye bas.");
   const meta = $("game-meta");
   meta.replaceChildren();
   const tag = (text, cls = "tag") => { const t = document.createElement("span"); t.className = cls; t.textContent = text; meta.append(t); };
   if (a) {
-    if (a.frozen) tag(`${a.frozen} uygulama donduruldu`, "tag pink");
-    if (a.closed) tag(`${a.closed} uygulama kapatıldı`, "tag pink");
-    if (a.freedBytes > 0) tag(`${gb(a.freedBytes)} GB RAM boşaldı`);
+    if (a.frozen) tag(t("{n} uygulama donduruldu", { n: a.frozen }), "tag pink");
+    if (a.closed) tag(t("{n} uygulama kapatıldı", { n: a.closed }), "tag pink");
+    if (a.freedBytes > 0) tag(t("{n} GB RAM boşaldı", { n: gb(a.freedBytes) }));
     a.notes.forEach((n) => tag(n, "tag ghost"));
   } else {
     const n = Object.keys(g.targets).length;
-    tag(n ? `${n} uygulama dondurulacak/kapatılacak` : "Dondurulacak uygulama seçilmedi", n ? "tag" : "tag ghost");
+    tag(n ? t("{n} uygulama dondurulacak/kapatılacak", { n }) : t("Dondurulacak uygulama seçilmedi"), n ? "tag" : "tag ghost");
   }
 
   const last = $("game-last");
   last.hidden = !g.last || !!a;
   if (g.last) {
     const r = g.last;
-    last.innerHTML = `<span class="ls-title">Son oturum</span>`;
+    last.replaceChildren(Object.assign(document.createElement("span"), { className: "ls-title", textContent: t("Son oturum") }));
     const item = (label, value) => {
       const s = document.createElement("span");
       s.className = "ls-item";
@@ -346,32 +368,32 @@ function renderGame(g) {
       s.append(b);
       last.append(s);
     };
-    item("Oyun", r.name);
-    item("Süre", r.minutes + " dk");
-    if (r.freedBytes > 0) item("Boşalan RAM", gb(r.freedBytes) + " GB");
-    if (r.peakGpuTemp > 0) item("En yüksek GPU", r.peakGpuTemp + " °C");
-    item("Durdurulan", String(r.frozen + r.closed));
+    item(t("Oyun"), r.name);
+    item(t("Süre"), t("{m} dk", { m: r.minutes }));
+    if (r.freedBytes > 0) item(t("Boşalan RAM"), gb(r.freedBytes) + " GB");
+    if (r.peakGpuTemp > 0) item(t("En yüksek GPU"), r.peakGpuTemp + " °C");
+    item(t("Durdurulan"), String(r.frozen + r.closed));
   }
 
   document.querySelectorAll("[data-game-setting]").forEach((el) => { el.checked = g.settings[el.dataset.gameSetting]; });
-  $("game-known").textContent = `Hazır listede ${g.knownCount} popüler oyun var (CS2, VALORANT, LoL, Roblox, Metin2…). Steam ve Epic kütüphanen de otomatik taranır.`;
+  $("game-known").textContent = t("Hazır listede {n} popüler oyun var (CS2, VALORANT, LoL, Roblox, Metin2…). Steam ve Epic kütüphanen de otomatik taranır.", { n: g.knownCount });
 
   $("game-list").replaceChildren(...(g.games.length ? g.games.map((x) => {
     const chip = document.createElement("span");
     chip.className = "game-chip";
     chip.textContent = x.name + " ";
     const src = document.createElement("small");
-    src.textContent = { steam: "Steam", epic: "Epic", custom: "eklendi" }[x.source] ?? x.source;
+    src.textContent = { steam: "Steam", epic: "Epic", custom: t("eklendi") }[x.source] ?? x.source;
     chip.append(src);
     if (x.source === "custom") {
       const del = document.createElement("button");
-      del.title = "Listeden çıkar";
+      del.title = t("Listeden çıkar");
       del.textContent = "×";
       del.addEventListener("click", () => call("game.removeGame", { exe: x.exes[0] }).then(render));
       chip.append(del);
     }
     return chip;
-  }) : [Object.assign(document.createElement("div"), { className: "empty", textContent: "Steam/Epic'te kurulu oyun bulunamadı. Hazır listedeki oyunlar yine de algılanır." })]));
+  }) : [Object.assign(document.createElement("div"), { className: "empty", textContent: t("Steam/Epic'te kurulu oyun bulunamadı. Hazır listedeki oyunlar yine de algılanır.") })]));
 
   if (apps) renderApps(g.targets);
 }
@@ -383,7 +405,7 @@ function renderApps(targets) {
   for (const name of Object.keys(targets))
     if (!rows.some((r) => r.process.toLowerCase() === name.toLowerCase())) rows.push({ process: name, name, memoryMb: null, count: 0 });
   if (!rows.length) {
-    box.innerHTML = '<div class="empty">Dondurulabilecek açık uygulama yok.</div>';
+    box.replaceChildren(Object.assign(document.createElement("div"), { className: "empty", textContent: t("Dondurulabilecek açık uygulama yok.") }));
     return;
   }
   box.replaceChildren(...rows.map((r) => {
@@ -391,9 +413,11 @@ function renderApps(targets) {
     const row = document.createElement("div");
     row.className = "app-row";
     row.innerHTML = `<div class="app-name"><span class="n"></span><small></small></div><div class="app-mem"></div>
-      <div class="seg"><button data-a="none">Dokunma</button><button data-a="suspend">Dondur</button><button data-a="close" class="close">Kapat</button></div>`;
+      <div class="seg"><button data-a="none"></button><button data-a="suspend"></button><button data-a="close" class="close"></button></div>`;
+    const actions = { none: t("Dokunma"), suspend: t("Dondur"), close: t("Kapat") };
+    row.querySelectorAll(".seg button").forEach((b) => { b.textContent = actions[b.dataset.a]; });
     row.querySelector(".n").textContent = r.name;
-    row.querySelector("small").textContent = r.process + (r.count > 1 ? ` · ${r.count} işlem` : "") + (r.count === 0 ? " · şu an kapalı" : "");
+    row.querySelector("small").textContent = r.process + (r.count > 1 ? " · " + t("{n} işlem", { n: r.count }) : "") + (r.count === 0 ? " · " + t("şu an kapalı") : "");
     row.querySelector(".app-mem").textContent = r.memoryMb == null ? "" : r.memoryMb >= 1024 ? (r.memoryMb / 1024).toFixed(1) + " GB" : r.memoryMb + " MB";
     row.querySelectorAll(".seg button").forEach((b) => {
       b.classList.toggle("on", b.dataset.a === current);
@@ -467,7 +491,7 @@ $("add-game").addEventListener("submit", (e) => {
   e.preventDefault();
   const exe = $("add-game-exe").value.trim();
   if (!exe) return;
-  call("game.addGame", { exe }).then((s) => { $("add-game-exe").value = ""; render(s); toast(exe + " oyun listesine eklendi.", "ok"); });
+  call("game.addGame", { exe }).then((s) => { $("add-game-exe").value = ""; render(s); toast(t("{exe} oyun listesine eklendi.", { exe }), "ok"); });
 });
 
 // ---- İnternet ----
@@ -485,14 +509,14 @@ function fmtBytes(b) {
 
 function verdict(inet, gw) {
   if (gw && (gw.lossPercent > 5 || (gw.avgMs ?? 0) > 20))
-    return ["bad", "Sorun evde: modem ya da Wi-Fi bağlantısı zayıf. Kabloyla bağlanmayı veya modeme yaklaşmayı dene."];
+    return ["bad", t("Sorun evde: modem ya da Wi-Fi bağlantısı zayıf. Kabloyla bağlanmayı veya modeme yaklaşmayı dene.")];
   if (inet.lossPercent > 2)
-    return ["bad", `%${inet.lossPercent.toFixed(0)} paket kaybı var. Modem iyi, sorun operatör hattında olabilir.`];
+    return ["bad", t("%{n} paket kaybı var. Modem iyi, sorun operatör hattında olabilir.", { n: inet.lossPercent.toFixed(0) })];
   if ((inet.jitterMs ?? 0) > 15 || (inet.avgMs ?? 0) > 120)
-    return ["warn", "Bağlantı dalgalı. Oyunlarda ara ara gecikme hissedebilirsin."];
+    return ["warn", t("Bağlantı dalgalı. Oyunlarda ara ara gecikme hissedebilirsin.")];
   if ((inet.avgMs ?? 99) < 40 && (inet.jitterMs ?? 9) < 5)
-    return ["ok", "Bağlantı oyun için çok iyi."];
-  return ["ok", "Bağlantı oyun için iyi."];
+    return ["ok", t("Bağlantı oyun için çok iyi.")];
+  return ["ok", t("Bağlantı oyun için iyi.")];
 }
 
 function drawGraph(inet, gw) {
@@ -528,11 +552,11 @@ async function pollPing() {
     const ms = (v) => (v == null ? "—" : v);
     $("net-target-label").textContent = inet.target;
     $("net-ms").innerHTML = `${ms(inet.lastMs)} <small>ms</small>`;
-    $("net-sub").textContent = inet.avgMs == null ? "yanıt yok" :
-      `ort ${Math.round(inet.avgMs)} · dalgalanma ${inet.jitterMs?.toFixed(1) ?? "—"} · kayıp %${inet.lossPercent.toFixed(0)}`;
+    $("net-sub").textContent = inet.avgMs == null ? t("yanıt yok") :
+      t("ort {avg} · dalgalanma {jitter} · kayıp %{loss}", { avg: Math.round(inet.avgMs), jitter: inet.jitterMs?.toFixed(1) ?? "—", loss: inet.lossPercent.toFixed(0) });
     $("net-gw-label").textContent = gw?.target ?? "";
     $("gw-ms").innerHTML = gw ? `${ms(gw.lastMs)} <small>ms</small>` : "—";
-    $("gw-sub").textContent = gw ? `kayıp %${gw.lossPercent.toFixed(0)}` : "modem bulunamadı";
+    $("gw-sub").textContent = gw ? t("kayıp %{loss}", { loss: gw.lossPercent.toFixed(0) }) : t("modem bulunamadı");
     if (inet.history.length >= 3) {
       const [cls, text] = verdict(inet, gw);
       const v = $("net-verdict");
@@ -546,17 +570,20 @@ async function pollPing() {
 
 async function pollTraffic() {
   try {
-    const t = await call("net.traffic");
-    $("tr-toggle").textContent = t.running ? "İzlemeyi durdur" : "İzlemeyi başlat";
-    if (!t.running && !t.apps.length) return;
-    const head = '<div class="tr-row head"><span>Uygulama</span><span class="num">İndirme</span><span class="num">Yükleme</span><span class="num">Toplam</span></div>';
+    const tr = await call("net.traffic");
+    $("tr-toggle").textContent = tr.running ? t("İzlemeyi durdur") : t("İzlemeyi başlat");
+    if (!tr.running && !tr.apps.length) return;
     const list = $("tr-list");
-    list.innerHTML = head;
-    if (!t.apps.length) {
-      list.insertAdjacentHTML("beforeend", '<div class="empty">Henüz trafik yok…</div>');
+    const head = document.createElement("div");
+    head.className = "tr-row head";
+    head.innerHTML = '<span></span><span class="num"></span><span class="num"></span><span class="num"></span>';
+    [t("Uygulama"), t("İndirme"), t("Yükleme"), t("Toplam")].forEach((text, i) => { head.children[i].textContent = text; });
+    list.replaceChildren(head);
+    if (!tr.apps.length) {
+      list.append(Object.assign(document.createElement("div"), { className: "empty", textContent: t("Henüz trafik yok…") }));
       return;
     }
-    for (const a of t.apps) {
+    for (const a of tr.apps) {
       const row = document.createElement("div");
       row.className = "tr-row";
       row.innerHTML = `<span class="tr-name"><span class="n"></span><small></small></span>
@@ -580,7 +607,7 @@ function onNetPage(visible) {
   if (!visible) {
     // The elevated monitor only runs while the page is open.
     call("net.traffic.stop").catch(() => {});
-    $("tr-toggle").textContent = "İzlemeyi başlat";
+    $("tr-toggle").textContent = t("İzlemeyi başlat");
     return;
   }
   pollPing();
@@ -591,21 +618,21 @@ $("tr-toggle").addEventListener("click", async () => {
   const btn = $("tr-toggle");
   btn.disabled = true;
   try {
-    const t = await call("net.traffic");
-    if (t.running) {
+    const tr = await call("net.traffic");
+    if (tr.running) {
       await call("net.traffic.stop");
       clearInterval(trafficTimer);
-      btn.textContent = "İzlemeyi başlat";
+      btn.textContent = t("İzlemeyi başlat");
     } else {
-      btn.textContent = "İzin bekleniyor…";
+      btn.textContent = t("İzin bekleniyor…");
       await call("net.traffic.start");
-      btn.textContent = "İzlemeyi durdur";
+      btn.textContent = t("İzlemeyi durdur");
       pollTraffic();
       trafficTimer = setInterval(pollTraffic, 1000);
     }
   } catch (e) {
     toast(e.message, "error");
-    btn.textContent = "İzlemeyi başlat";
+    btn.textContent = t("İzlemeyi başlat");
   } finally {
     btn.disabled = false;
   }
@@ -620,7 +647,7 @@ $("net-custom").addEventListener("submit", (e) => {
 });
 
 // Speed test progress arrives as "speed" events.
-const PHASES = { ping: "Boşta ping ölçülüyor…", download: "İndirme hızı ölçülüyor…", upload: "Yükleme hızı ölçülüyor…", done: "Bitti." };
+const PHASES = { ping: t("Boşta ping ölçülüyor…"), download: t("İndirme hızı ölçülüyor…"), upload: t("Yükleme hızı ölçülüyor…"), done: t("Bitti.") };
 function showSpeed(p) {
   const f = (v) => (v == null ? "–" : v >= 100 ? Math.round(v) : v.toFixed(1));
   $("sp-down").textContent = f(p.downMbps);
@@ -638,7 +665,7 @@ $("sp-start").addEventListener("click", async () => {
     return;
   }
   btn.dataset.running = "1";
-  btn.textContent = "Durdur";
+  btn.textContent = t("Durdur");
   $("sp-grade").textContent = "–";
   $("sp-grade").className = "grade";
   showSpeed({ phase: "ping", fraction: 0 });
@@ -649,23 +676,23 @@ $("sp-start").addEventListener("click", async () => {
       const g = $("sp-grade");
       g.textContent = r.grade;
       g.className = "grade g-" + r.grade[0].toLowerCase();
-      $("sp-grade-sub").textContent = `yükte +${Math.max(r.downLoadedMs, r.upLoadedMs) - r.idleMs} ms`;
+      $("sp-grade-sub").textContent = t("yükte +{ms} ms", { ms: Math.max(r.downLoadedMs, r.upLoadedMs) - r.idleMs });
       $("sp-phase").textContent = {
-        A: "Hat dolsa bile ping neredeyse artmıyor: oyun oynarken indirme yapabilirsin.",
-        B: "Hat dolunca ping biraz artıyor; büyük indirmeler sırasında oyunda hafif gecikme olabilir.",
-        C: "Hat dolunca ping belirgin artıyor. Oyun sırasında indirme/yükleme yapma.",
-        D: "Hat dolunca ping çok artıyor. Modemde QoS / SQM açmak çok fayda eder.",
-        F: "Hat dolunca bağlantı neredeyse kilitleniyor. Modemde QoS / SQM ayarı şart.",
+        A: t("Hat dolsa bile ping neredeyse artmıyor: oyun oynarken indirme yapabilirsin."),
+        B: t("Hat dolunca ping biraz artıyor; büyük indirmeler sırasında oyunda hafif gecikme olabilir."),
+        C: t("Hat dolunca ping belirgin artıyor. Oyun sırasında indirme/yükleme yapma."),
+        D: t("Hat dolunca ping çok artıyor. Modemde QoS / SQM açmak çok fayda eder."),
+        F: t("Hat dolunca bağlantı neredeyse kilitleniyor. Modemde QoS / SQM ayarı şart."),
       }[r.grade[0]];
     } else {
-      $("sp-phase").textContent = "Test durduruldu.";
+      $("sp-phase").textContent = t("Test durduruldu.");
     }
   } catch (e) {
     toast(e.message, "error");
-    $("sp-phase").textContent = "Test tamamlanamadı.";
+    $("sp-phase").textContent = t("Test tamamlanamadı.");
   } finally {
     delete btn.dataset.running;
-    btn.textContent = "Testi başlat";
+    btn.textContent = t("Testi başlat");
   }
 });
 
@@ -681,11 +708,12 @@ document.querySelector('[data-page="dns"]').addEventListener("click", () => {
 $("probe-run").addEventListener("click", async () => {
   const btn = $("probe-run");
   btn.disabled = true;
-  $("probe-list").innerHTML = '<div class="probe-row wait"><span class="dot"></span><span class="probe-name">Test ediliyor…</span><span></span><span></span></div>';
+  $("probe-list").innerHTML = '<div class="probe-row wait"><span class="dot"></span><span class="probe-name"></span><span></span><span></span></div>';
+  $("probe-list").querySelector(".probe-name").textContent = t("Test ediliyor…");
   try {
     const results = await call("probe.run");
     $("probe-list").replaceChildren(...results.map(probeRow));
-    $("probe-time").textContent = "Son test: " + new Date().toLocaleTimeString("tr-TR");
+    $("probe-time").textContent = t("Son test: {time}", { time: new Date().toLocaleTimeString(LOCALE) });
   } catch (e) {
     toast(e.message, "error");
   } finally {
@@ -702,7 +730,7 @@ function probeRow(r) {
     <span class="probe-ms"></span>`;
   row.querySelector(".n").textContent = r.name;
   row.querySelector(".probe-host").textContent = r.host;
-  row.querySelector(".probe-detail").textContent = r.ok ? "Açılıyor · " + r.detail : r.detail;
+  row.querySelector(".probe-detail").textContent = r.ok ? t("Açılıyor · {detail}", { detail: r.detail }) : r.detail;
   row.querySelector(".probe-ms").textContent = r.ms != null ? r.ms + " ms" : "—";
   return row;
 }
@@ -712,29 +740,31 @@ function renderUpdate(u) {
   const a = u.available;
   $("update-bar").hidden = !a || (u.dismissed && !u.installing);
   if (a) {
-    $("update-title").textContent = u.installing ? `Geçit ${a.version} indiriliyor…` : `Geçit ${a.version} çıktı`;
+    $("update-title").textContent = u.installing ? t("Geçit {version} indiriliyor…", { version: a.version }) : t("Geçit {version} çıktı", { version: a.version });
     if (!u.installing)
-      $("update-sub").textContent = `Şu an ${u.current} kullanıyorsun · ${fmtBytes(a.size)} · ${new Date(a.published).toLocaleDateString("tr-TR")}`;
+      $("update-sub").textContent = t("Şu an {current} kullanıyorsun · {size} · {date}",
+        { current: u.current, size: fmtBytes(a.size), date: new Date(a.published).toLocaleDateString(LOCALE) });
     $("update-install").disabled = u.installing;
-    $("update-install").textContent = u.installing ? "Bekle…" : "Güncelle";
+    $("update-install").textContent = u.installing ? t("Bekle…") : t("Güncelle");
     $("update-later").hidden = u.installing;
     $("update-progress-bar").hidden = !u.installing;
   }
   $("update-current").textContent = "v" + u.current;
   $("update-auto").checked = u.auto;
   $("update-check").disabled = u.checking || u.installing;
-  $("update-check").textContent = u.checking ? "Denetleniyor…" : "Güncellemeleri denetle";
-  const at = u.lastCheck ? new Date(u.lastCheck).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : null;
+  $("update-check").textContent = u.checking ? t("Denetleniyor…") : t("Güncellemeleri denetle");
+  const at = u.lastCheck ? new Date(u.lastCheck).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }) : null;
   $("update-status").textContent = u.error
-    ?? (a ? `Yeni sürüm var: ${a.version}.` : at ? `En son sürümü kullanıyorsun (denetlendi: ${at}).` : "Güncellemeler GitHub'daki sürüm sayfasından gelir.");
+    ?? (a ? t("Yeni sürüm var: {version}.", { version: a.version }) : at ? t("En son sürümü kullanıyorsun (denetlendi: {time}).", { time: at })
+      : t("Güncellemeler GitHub'daki sürüm sayfasından gelir."));
 }
 
 function showUpdateProgress(f) {
   const pct = Math.round(f * 100);
   $("update-progress").style.width = pct + "%";
   $("update-sub").textContent = pct < 100
-    ? `%${pct} indirildi. İndirme bitince kurulum başlar; Geçit kapanıp yeni sürümle açılır.`
-    : "Doğrulanıyor, kurulum başlıyor… Yönetici izni isteyecek.";
+    ? t("%{pct} indirildi. İndirme bitince kurulum başlar; Geçit kapanıp yeni sürümle açılır.", { pct })
+    : t("Doğrulanıyor, kurulum başlıyor… Yönetici izni isteyecek.");
 }
 
 $("update-install").addEventListener("click", () => call("update.install").then(render, (e) => toast(e.message, "error")));
@@ -745,7 +775,7 @@ $("update-check").addEventListener("click", async () => {
   try {
     const s = await call("update.check");
     render(s);
-    if (!s.update.available && !s.update.error) toast("En son sürümü kullanıyorsun.", "ok");
+    if (!s.update.available && !s.update.error) toast(t("En son sürümü kullanıyorsun."), "ok");
   } catch (e) {
     toast(e.message, "error");
   }
@@ -762,26 +792,32 @@ const KIND_ICONS = {
   iot: '<svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>',
   unknown: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></svg>',
 };
-const KIND_NAMES = { router: "Modem / ağ cihazı", pc: "Bilgisayar", phone: "Telefon / tablet", tv: "Televizyon", console: "Oyun konsolu", printer: "Yazıcı", iot: "Akıllı ev cihazı" };
+const KIND_NAMES = {
+  router: t("Modem / ağ cihazı"), pc: t("Bilgisayar"), phone: t("Telefon / tablet"), tv: t("Televizyon"),
+  console: t("Oyun konsolu"), printer: t("Yazıcı"), iot: t("Akıllı ev cihazı"),
+};
 let lanVisited = false;
 
 function ago(iso) {
   const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-  if (min < 2) return "az önce";
-  if (min < 60) return min + " dk önce";
-  if (min < 48 * 60) return Math.round(min / 60) + " sa önce";
-  return Math.round(min / 1440) + " gün önce";
+  if (min < 2) return t("az önce");
+  if (min < 60) return t("{n} dk önce", { n: min });
+  if (min < 48 * 60) return t("{n} sa önce", { n: Math.round(min / 60) });
+  return t("{n} gün önce", { n: Math.round(min / 1440) });
 }
 
 function renderLan(r) {
   if (!r) return;
   $("lan-hero").dataset.state = "idle";
   $("lan-count").textContent = r.online.length;
-  $("lan-net-label").textContent = r.kind === "wifi" ? "Wi-Fi ağı" : "Kablolu ağ";
+  $("lan-net-label").textContent = r.kind === "wifi" ? t("Wi-Fi ağı") : t("Kablolu ağ");
   $("lan-net").textContent = r.ssid ?? r.adapter;
   const gw = r.online.find((d) => d.isGateway);
-  const modem = gw ? (gw.model ?? gw.vendor) : null;
-  $("lan-detail").textContent = `${r.cidr} · modem ${r.gateway}${modem ? " (" + modem + ")" : ""} · son tarama ${new Date(r.at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`;
+  const modem = gw ? (gw.model ?? (gw.vendor && t(gw.vendor))) : null;
+  const time = new Date(r.at).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
+  $("lan-detail").textContent = modem
+    ? t("{cidr} · modem {ip} ({modem}) · son tarama {time}", { cidr: r.cidr, ip: r.gateway, modem, time })
+    : t("{cidr} · modem {ip} · son tarama {time}", { cidr: r.cidr, ip: r.gateway, time });
   $("lan-online").replaceChildren(...r.online.map((d) => devRow(d, false)));
   $("lan-offline-title").hidden = $("lan-offline").hidden = !r.offline.length;
   $("lan-offline").replaceChildren(...r.offline.map((d) => devRow(d, true)));
@@ -797,7 +833,7 @@ function devRow(d, offline) {
     <div class="dev-ping"></div>`;
   const nm = row.querySelector(".n");
   nm.textContent = d.name;
-  nm.title = "Ad vermek için tıkla";
+  nm.title = t("Ad vermek için tıkla");
   const names = row.querySelector(".dev-name");
   const badge = (text, cls) => {
     const b = document.createElement("span");
@@ -805,13 +841,14 @@ function devRow(d, offline) {
     b.textContent = text;
     names.append(b);
   };
-  if (d.isSelf) badge("bu bilgisayar", "me");
-  if (d.isGateway) badge("modem", "gw");
-  if (d.isNew) badge("yeni", "new");
-  if (d.randomMac) badge("gizli MAC", "");
+  if (d.isSelf) badge(t("bu bilgisayar"), "me");
+  if (d.isGateway) badge(t("modem"), "gw");
+  if (d.isNew) badge(t("yeni"), "new");
+  if (d.randomMac) badge(t("gizli MAC"), "");
 
-  const sub = [KIND_NAMES[d.kind], d.model ?? d.vendor, offline ? "en son " + ago(d.lastSeen) : d.isNew ? "ilk görülme " + ago(d.firstSeen) : null];
-  row.querySelector(".dev-sub").textContent = sub.filter(Boolean).join(" · ") || "Ne olduğu anlaşılamadı";
+  const seen = offline ? t("en son {ago}", { ago: ago(d.lastSeen) }) : d.isNew ? t("ilk görülme {ago}", { ago: ago(d.firstSeen) }) : null;
+  const sub = [KIND_NAMES[d.kind], d.model ?? (d.vendor && t(d.vendor)), seen];
+  row.querySelector(".dev-sub").textContent = sub.filter(Boolean).join(" · ") || t("Ne olduğu anlaşılamadı");
   row.querySelector(".ip").textContent = d.ip;
   row.querySelector(".mac").textContent = d.mac;
 
@@ -819,13 +856,13 @@ function devRow(d, offline) {
   if (offline) {
     const forget = document.createElement("button");
     forget.className = "forget";
-    forget.textContent = "unut";
-    forget.title = "Listeden çıkar; tekrar bağlanırsa yeni cihaz olarak görünür";
+    forget.textContent = t("unut");
+    forget.title = t("Listeden çıkar; tekrar bağlanırsa yeni cihaz olarak görünür");
     forget.addEventListener("click", () => call("lan.forget", { mac: d.mac }).then(renderLan));
     ping.append(forget);
   } else if (!d.isSelf) {
     ping.textContent = d.pingMs != null ? d.pingMs + " ms" : "—";
-    if (d.pingMs == null) ping.title = "Ping'e yanıt vermiyor (birçok telefon ve TV böyledir)";
+    if (d.pingMs == null) ping.title = t("Ping'e yanıt vermiyor (birçok telefon ve TV böyledir)");
   }
 
   nm.addEventListener("click", () => {
@@ -855,9 +892,9 @@ function devRow(d, offline) {
 async function scanLan() {
   const btn = $("lan-scan");
   btn.disabled = true;
-  btn.textContent = "Taranıyor…";
+  btn.textContent = t("Taranıyor…");
   $("lan-hero").dataset.state = "scanning";
-  $("lan-detail").textContent = "Ağdaki her adres yoklanıyor, cihazların adları soruluyor…";
+  $("lan-detail").textContent = t("Ağdaki her adres yoklanıyor, cihazların adları soruluyor…");
   try {
     renderLan(await call("lan.scan"));
   } catch (e) {
@@ -865,7 +902,7 @@ async function scanLan() {
     $("lan-hero").dataset.state = "idle";
   } finally {
     btn.disabled = false;
-    btn.textContent = "Yeniden tara";
+    btn.textContent = t("Yeniden tara");
   }
 }
 
@@ -879,11 +916,11 @@ $("lan-scan").addEventListener("click", scanLan);
 $("lan-watch").addEventListener("change", (e) => call("lan.watch", { on: e.target.checked }).then(render));
 
 // ---- Açılış ----
-const IMPACT = { high: "Yüksek", medium: "Orta", low: "Düşük", none: "Çalışmadı", unknown: "Ölçülmedi", off: "Kapalı" };
+const IMPACT = { high: t("Yüksek"), medium: t("Orta"), low: t("Düşük"), none: t("Çalışmadı"), unknown: t("Ölçülmedi"), off: t("Kapalı") };
 const IMPACT_ORDER = { high: 0, medium: 1, low: 2, none: 3, unknown: 4 };
 const SOURCES = {
-  UserRun: "kayıt defteri", MachineRun: "kayıt defteri · tüm kullanıcılar", MachineRun32: "kayıt defteri · tüm kullanıcılar",
-  UserFolder: "Başlangıç klasörü", CommonFolder: "Başlangıç klasörü · tüm kullanıcılar",
+  UserRun: t("kayıt defteri"), MachineRun: t("kayıt defteri · tüm kullanıcılar"), MachineRun32: t("kayıt defteri · tüm kullanıcılar"),
+  UserFolder: t("Başlangıç klasörü"), CommonFolder: t("Başlangıç klasörü · tüm kullanıcılar"),
 };
 let bootVisible = false;
 
@@ -906,48 +943,55 @@ function renderBoot(b) {
   const h = b.history;
   const last = h[h.length - 1];
   const prev = h[h.length - 2];
-  const t = $("boot-time");
+  const time = $("boot-time");
   const sub = $("boot-time-sub");
   if (!last) {
-    t.className = "boot-time none";
-    t.textContent = "?";
-    sub.textContent = "Henüz ölçülmedi.";
+    time.className = "boot-time none";
+    time.textContent = "?";
+    sub.textContent = t("Henüz ölçülmedi.");
   } else {
     if (last.readySeconds == null) {
-      t.className = "boot-time slow";
-      t.innerHTML = "3 dk<small>+</small>";
-      sub.textContent = "Masaüstünden sonra 3 dakika boyunca meşguldü";
+      time.className = "boot-time slow";
+      time.innerHTML = "<small>+</small>";
+      time.prepend(t("{m} dk", { m: 3 }));
+      sub.textContent = t("Masaüstünden sonra 3 dakika boyunca meşguldü");
     } else {
-      t.className = "boot-time" + (last.readySeconds > 60 ? " slow" : "");
-      t.innerHTML = `${sec(last.readySeconds)}<small> sn</small>`;
-      sub.textContent = "Masaüstü göründükten sonra kullanıma hazır";
+      time.className = "boot-time" + (last.readySeconds > 60 ? " slow" : "");
+      time.innerHTML = `${sec(last.readySeconds)}<small></small>`;
+      time.querySelector("small").textContent = " " + t("sn");
+      sub.textContent = t("Masaüstü göründükten sonra kullanıma hazır");
     }
-    sub.append(" · " + new Date(last.desktopAt).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }));
+    sub.append(" · " + new Date(last.desktopAt).toLocaleString(LOCALE, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }));
     if (prev?.readySeconds != null && last.readySeconds != null && Math.abs(last.readySeconds - prev.readySeconds) >= 2) {
       const d = last.readySeconds - prev.readySeconds;
       const span = document.createElement("div");
       span.className = d < 0 ? "delta-good" : "delta-bad";
-      span.textContent = `Önceki açılıştan ${sec(Math.abs(d))} sn ${d < 0 ? "hızlı" : "yavaş"}`;
+      span.textContent = d < 0
+        ? t("Önceki açılıştan {s} sn hızlı", { s: sec(Math.abs(d)) })
+        : t("Önceki açılıştan {s} sn yavaş", { s: sec(Math.abs(d)) });
       sub.append(span);
     }
   }
   drawBootChart(h);
 
   const cta = $("boot-cta");
-  if (b.measuring) cta.innerHTML = '<span class="ok">● Bu açılış şu an ölçülüyor…</span>';
-  else if (b.autostart) cta.textContent = "Geçit Windows'la açıldığı için her açılışı kendiliğinden ölçer.";
-  else if (b.scheduled) cta.innerHTML = '<span class="ok">✓ Bir sonraki açılışta ölçülecek</span><button class="link-btn" data-schedule="0">iptal</button>';
-  else cta.innerHTML = `<span>${last ? "Değişikliklerin etkisini görmek için:" : "Bilgisayarı yeniden başlatınca ölçülür."}</span><button class="btn" data-schedule="1">Bir sonraki açılışta ölç</button>`;
+  const el = (tag, cls, text, attrs = {}) => Object.assign(document.createElement(tag), { className: cls, textContent: text }, attrs);
+  const schedule = (cls, text, on) => { const b = el("button", cls, text); b.dataset.schedule = on; return b; };
+  if (b.measuring) cta.replaceChildren(el("span", "ok", "● " + t("Bu açılış şu an ölçülüyor…")));
+  else if (b.autostart) cta.textContent = t("Geçit Windows'la açıldığı için her açılışı kendiliğinden ölçer.");
+  else if (b.scheduled) cta.replaceChildren(el("span", "ok", "✓ " + t("Bir sonraki açılışta ölçülecek")), schedule("link-btn", t("iptal"), "0"));
+  else cta.replaceChildren(el("span", "", last ? t("Değişikliklerin etkisini görmek için:") : t("Bilgisayarı yeniden başlatınca ölçülür.")),
+    schedule("btn", t("Bir sonraki açılışta ölç"), "1"));
 
   const on = b.items.filter((i) => i.enabled);
   const heavy = on.filter((i) => i.impact === "high").length;
   const facts = $("boot-facts");
   facts.replaceChildren();
   const fact = (text, cls = "tag") => { const s = document.createElement("span"); s.className = cls; s.textContent = text; facts.append(s); };
-  fact(`${on.length} program açılışta başlıyor`);
-  if (heavy) fact(`${heavy} tanesi açılışı ciddi yavaşlatıyor`, "tag pink");
-  if (b.items.length > on.length) fact(`${b.items.length - on.length} program kapatıldı`, "tag ghost");
-  if (b.bios != null) fact(`BIOS: ${sec(b.bios)} sn${b.bios > 8 ? " · BIOS'ta \"Fast Boot\" açmak birkaç saniye kazandırabilir" : ""}`, "tag ghost");
+  fact(t("{n} program açılışta başlıyor", { n: on.length }));
+  if (heavy) fact(t("{n} tanesi açılışı ciddi yavaşlatıyor", { n: heavy }), "tag pink");
+  if (b.items.length > on.length) fact(t("{n} program kapatıldı", { n: b.items.length - on.length }), "tag ghost");
+  if (b.bios != null) fact(t("BIOS: {s} sn", { s: sec(b.bios) }) + (b.bios > 8 ? " · " + t("BIOS'ta \"Fast Boot\" açmak birkaç saniye kazandırabilir") : ""), "tag ghost");
 
   // The same program started from two places (e.g. "for me" and "for everyone"): one is enough.
   const seen = new Map();
@@ -959,9 +1003,9 @@ function renderBoot(b) {
 
   const items = [...b.items].sort((x, y) => (y.enabled - x.enabled)
     || (IMPACT_ORDER[x.impact ?? "unknown"] - IMPACT_ORDER[y.impact ?? "unknown"])
-    || x.name.localeCompare(y.name, "tr"));
+    || x.name.localeCompare(y.name, LANG));
   $("boot-items").replaceChildren(...(items.length ? items.map(bootRow)
-    : [Object.assign(document.createElement("div"), { className: "empty", textContent: "Açılışta başlayan program yok." })]));
+    : [Object.assign(document.createElement("div"), { className: "empty", textContent: t("Açılışta başlayan program yok.") })]));
 }
 
 function drawBootChart(h) {
@@ -979,10 +1023,10 @@ function drawBootChart(h) {
     const bh = Math.max(3, (val(r) / top) * (H - 12));
     const x = W - (data.length - i) * (W / N) + 3;
     const cls = i === data.length - 1 ? "last" : r.readySeconds == null ? "capped" : "";
-    const label = r.readySeconds == null ? "3 dk+" : sec(r.readySeconds) + " sn";
-    const when = new Date(r.desktopAt).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    const label = r.readySeconds == null ? t("{m} dk", { m: 3 }) + "+" : sec(r.readySeconds) + " " + t("sn");
+    const when = new Date(r.desktopAt).toLocaleString(LOCALE, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
     return `<rect class="${cls}" x="${x}" y="${H - bh}" width="${bw}" height="${bh}" rx="2"><title>${when}: ${label}</title></rect>`;
-  }).join("") + `<text x="0" y="9">son ${data.length} açılış</text>`;
+  }).join("") + `<text x="0" y="9">${t("son {n} açılış", { n: data.length })}</text>`;
 }
 
 function bootRow(i) {
@@ -1001,14 +1045,14 @@ function bootRow(i) {
     b.textContent = text;
     name.insertBefore(b, name.querySelector("small"));
   };
-  if (i.suggested && i.enabled) badge("kapatılabilir", "good");
-  if (i.duplicate) badge("iki kez kayıtlı", "new");
+  if (i.suggested && i.enabled) badge(t("kapatılabilir"), "good");
+  if (i.duplicate) badge(t("iki kez kayıtlı"), "new");
   if (i.isWindows) badge("Windows", "");
-  if (i.missing) badge("dosyası yok", "new");
+  if (i.missing) badge(t("dosyası yok"), "new");
   const small = name.querySelector("small");
   small.textContent = [i.publisher, SOURCES[i.source]].filter(Boolean).join(" · ");
   small.title = i.command;
-  const hintText = i.hint ?? (i.duplicate ? "Aynı program iki ayrı yerden başlatılıyor; birini kapatman yeter." : null);
+  const hintText = i.hint ?? (i.duplicate ? t("Aynı program iki ayrı yerden başlatılıyor; birini kapatman yeter.") : null);
   if (hintText) {
     const hint = name.querySelector(".boot-hint");
     hint.hidden = false;
@@ -1021,20 +1065,20 @@ function bootRow(i) {
   imp.textContent = IMPACT[key];
   if (i.enabled && i.cpuMs != null && i.impact !== "none") {
     const s = document.createElement("small");
-    s.textContent = `${(i.cpuMs / 1000).toFixed(1)} sn işlemci · ${fmtBytes(i.ioBytes)}`;
+    s.textContent = t("{s} sn işlemci · {io}", { s: (i.cpuMs / 1000).toFixed(1), io: fmtBytes(i.ioBytes) });
     imp.append(s);
   } else if (i.impact === "none") {
-    imp.title = "Son açılışta çalışırken görülmedi (açılıp hemen kapanan programlar böyledir)";
+    imp.title = t("Son açılışta çalışırken görülmedi (açılıp hemen kapanan programlar böyledir)");
   }
 
   const sw = row.querySelector(".switch");
   sw.checked = i.enabled;
-  sw.title = i.needsAdmin ? "Tüm kullanıcılar için; yönetici izni ister" : "";
+  sw.title = i.needsAdmin ? t("Tüm kullanıcılar için; yönetici izni ister") : "";
   sw.addEventListener("change", async () => {
     sw.disabled = true;
     try {
       renderBoot(await call("boot.set", { id: i.id, on: sw.checked }));
-      toast(sw.checked ? `${i.name} açılışta yine başlayacak.` : `${i.name} artık açılışta başlamayacak.`, "ok");
+      toast(sw.checked ? t("{name} açılışta yine başlayacak.", { name: i.name }) : t("{name} artık açılışta başlamayacak.", { name: i.name }), "ok");
     } catch (e) {
       sw.checked = !sw.checked;
       sw.disabled = false;
@@ -1074,23 +1118,23 @@ function dayDiff(date) {
 
 function demoWhen(d) {
   if (!d.date) return d.dateText ?? "";
-  const t = new Date(d.date), diff = dayDiff(t);
-  const hm = t.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
-  const day = t.toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: t.getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
-  if (d.comingSoon) return diff <= 0 ? "bugün " + hm : diff === 1 ? "yarın " + hm : day + " " + hm;
-  return diff === 0 ? "bugün" : diff === -1 ? "dün" : diff > -7 ? -diff + " gün önce" : day;
+  const at = new Date(d.date), diff = dayDiff(at);
+  const hm = at.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
+  const day = at.toLocaleDateString(LOCALE, { day: "numeric", month: "short", year: at.getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
+  if (d.comingSoon) return diff <= 0 ? t("bugün {time}", { time: hm }) : diff === 1 ? t("yarın {time}", { time: hm }) : day + " " + hm;
+  return diff === 0 ? t("bugün") : diff === -1 ? t("dün") : diff > -7 ? t("{n} gün önce", { n: -diff }) : day;
 }
 
 function demoGroup(d) {
-  if (!d.date) return d.comingSoon ? "Tarihi kesinleşmemiş" : "Daha önce";
+  if (!d.date) return d.comingSoon ? t("Tarihi kesinleşmemiş") : t("Daha önce");
   const diff = dayDiff(d.date);
-  if (diff === 0) return "Bugün";
-  if (diff === 1) return "Yarın";
-  if (diff === -1) return "Dün";
-  if (Math.abs(diff) < 7) return diff > 0 ? "Bu hafta" : "Son bir hafta";
-  if (diff < 0) return "Daha önce";
-  if (diff < 31) return "Önümüzdeki haftalar";
-  return new Date(d.date).toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+  if (diff === 0) return t("Bugün");
+  if (diff === 1) return t("Yarın");
+  if (diff === -1) return t("Dün");
+  if (Math.abs(diff) < 7) return diff > 0 ? t("Bu hafta") : t("Son bir hafta");
+  if (diff < 0) return t("Daha önce");
+  if (diff < 31) return t("Önümüzdeki haftalar");
+  return new Date(d.date).toLocaleDateString(LOCALE, { month: "long", year: "numeric" });
 }
 
 function onDemosPage(visible) {
@@ -1142,7 +1186,7 @@ function demoMatches(d) {
   if (demoFilters.has("deck") && d.deck < 2) return false;
   for (const f of demoFilters) if (f !== "tr" && f !== "deck" && !d.tags.includes(f)) return false;
   if (!demoQuery) return true;
-  const hay = [d.name, d.description ?? "", ...d.tags].join(" ").toLocaleLowerCase("tr");
+  const hay = [d.name, d.description ?? "", ...d.tags].join(" ").toLocaleLowerCase(LANG);
   return demoQuery.split(/\s+/).every((w) => hay.includes(w));
 }
 
@@ -1161,7 +1205,7 @@ function renderDemoFilters(items) {
     });
     return c;
   };
-  $("demo-filters").replaceChildren(chip("tr", "Türkçe"), chip("deck", "Steam Deck'te oynanır"), ...tags.map((t) => chip(t, t)));
+  $("demo-filters").replaceChildren(chip("tr", t("Türkçe")), chip("deck", t("Steam Deck'te oynanır")), ...tags.map((tag) => chip(tag, tag)));
 }
 
 function renderDemos() {
@@ -1175,18 +1219,18 @@ function renderDemos() {
   $("demo-refresh").disabled = !data || data.loading || data.loadingMore;
 
   const msg = (text) => grid.replaceChildren(Object.assign(document.createElement("div"), { className: "empty", textContent: text }));
-  if (data?.loading) msg("Steam'den demolar alınıyor…");
-  else if (data?.error && !all.length) msg("Steam'e ulaşılamadı: " + data.error);
-  else if (demoList === "watch" && !demoWatch.watch.length) msg("Henüz takip ettiğin demo yok. \"Yakında\" sekmesinde beğendiğin demonun yıldızına bas; açılınca haber veririz.");
+  if (data?.loading) msg(t("Steam'den demolar alınıyor…"));
+  else if (data?.error && !all.length) msg(t("Steam'e ulaşılamadı: {error}", { error: data.error }));
+  else if (demoList === "watch" && !demoWatch.watch.length) msg(t("Henüz takip ettiğin demo yok. \"Yakında\" sekmesinde beğendiğin demonun yıldızına bas; açılınca haber veririz."));
   else {
     const shown = all.filter(demoMatches);
-    if (!shown.length) msg("Bu filtreye uyan demo yok.");
+    if (!shown.length) msg(t("Bu filtreye uyan demo yok."));
     else {
       const grouped = demoList === "new" || demoList === "soon";
       const out = [];
       let group = null;
       for (const d of shown) {
-        const g = demoList === "watch" ? (d.released ? "Çıktı, oynanabilir" : "Bekleniyor") : grouped ? demoGroup(d) : null;
+        const g = demoList === "watch" ? (d.released ? t("Çıktı, oynanabilir") : t("Bekleniyor")) : grouped ? demoGroup(d) : null;
         if (g && g !== group) {
           group = g;
           out.push(Object.assign(document.createElement("div"), { className: "demo-group", textContent: g }));
@@ -1200,11 +1244,11 @@ function renderDemos() {
   const row = $("demo-more-row");
   row.hidden = !data || data.loading || !data.items.length;
   if (data && !data.loading) {
-    $("demo-count").textContent = data.error ? "Yüklenemedi: " + data.error
-      : `${data.items.length.toLocaleString("tr-TR")} / ${data.total.toLocaleString("tr-TR")} demo gösteriliyor`;
+    $("demo-count").textContent = data.error ? t("Yüklenemedi: {error}", { error: data.error })
+      : t("{shown} / {total} demo gösteriliyor", { shown: data.items.length.toLocaleString(LOCALE), total: data.total.toLocaleString(LOCALE) });
     $("demo-more").hidden = data.items.length >= data.total;
     $("demo-more").disabled = !!data.loadingMore;
-    $("demo-more").textContent = data.loadingMore ? "Yükleniyor…" : "Daha fazla göster";
+    $("demo-more").textContent = data.loadingMore ? t("Yükleniyor…") : t("Daha fazla göster");
   }
 }
 
@@ -1229,10 +1273,10 @@ function demoCard(d) {
     i.addEventListener("error", () => i.remove());
     img.prepend(i);
   }
-  img.title = "Mağaza sayfasını aç";
+  img.title = t("Mağaza sayfasını aç");
   img.addEventListener("click", () => call("app.open", { url: d.url }));
   const when = card.querySelector(".demo-when");
-  when.textContent = d.released ? "çıktı" : demoWhen(d);
+  when.textContent = d.released ? t("çıktı") : demoWhen(d);
   when.hidden = !when.textContent;
   card.querySelector(".demo-name").textContent = d.name;
   card.querySelector(".demo-name").title = d.name;
@@ -1247,24 +1291,25 @@ function demoCard(d) {
     if (title) b.title = title;
     badges.append(b);
   };
-  for (const p of d.players ?? []) badge(p, "coop");
-  if (d.turkish) badge("Türkçe", "good");
-  if (d.deck === 3) badge("Deck ✓", "me", "Steam Deck: Doğrulandı");
-  else if (d.deck === 2) badge("Deck", "", "Steam Deck: Oynanabilir");
-  if (d.reviews > 0) badge("%" + d.reviewPercent, d.reviewPercent >= 80 ? "good" : "", `${d.reviewLabel ?? ""} · ${d.reviews.toLocaleString("tr-TR")} inceleme`);
-  if (d.gameDate && playable && /\d/.test(d.gameDate)) badge("Oyun: " + d.gameDate, "", "Tam oyunun çıkış tarihi");
+  for (const p of d.players ?? []) badge(t(p), "coop");
+  if (d.turkish) badge(t("Türkçe"), "good");
+  if (d.deck === 3) badge("Deck ✓", "me", t("Steam Deck: Doğrulandı"));
+  else if (d.deck === 2) badge("Deck", "", t("Steam Deck: Oynanabilir"));
+  if (d.reviews > 0) badge("%" + d.reviewPercent, d.reviewPercent >= 80 ? "good" : "",
+    t("{label} · {n} inceleme", { label: d.reviewLabel ?? "", n: d.reviews.toLocaleString(LOCALE) }));
+  if (d.gameDate && playable && /\d/.test(d.gameDate)) badge(t("Oyun: {date}", { date: d.gameDate }), "", t("Tam oyunun çıkış tarihi"));
 
   const star = card.querySelector(".demo-star");
   // Watching only makes sense for demos that aren't out yet; the watch list can always remove.
   star.hidden = playable && !watched;
   star.classList.toggle("on", watched);
   star.textContent = watched ? "★" : "☆";
-  star.title = watched ? "Takibi bırak" : "Takip et: demo açılınca haber ver";
+  star.title = watched ? t("Takibi bırak") : t("Takip et: demo açılınca haber ver");
   star.addEventListener("click", async () => {
     try {
       demoWatch = await call("demos.watch", { demo: d, on: !watched });
       renderDemos();
-      if (!watched) toast(`${d.name} takipte. Demo açılınca bildirim gelecek.`, "ok");
+      if (!watched) toast(t("{name} takipte. Demo açılınca bildirim gelecek.", { name: d.name }), "ok");
     } catch (e) {
       toast(e.message, "error");
     }
@@ -1272,11 +1317,11 @@ function demoCard(d) {
 
   const act = card.querySelector(".demo-act");
   if (playable && demoWatch.steam) {
-    act.textContent = "Yükle";
-    act.title = "Steam'de demoyu yükle";
+    act.textContent = t("Yükle");
+    act.title = t("Steam'de demoyu yükle");
     act.addEventListener("click", () => call("demos.install", { id: d.id }).catch((e) => toast(e.message, "error")));
   } else {
-    act.textContent = playable ? "Steam'de aç" : "Mağaza";
+    act.textContent = playable ? t("Steam'de aç") : t("Mağaza");
     act.addEventListener("click", () => call("app.open", { url: d.url }));
   }
   return card;
@@ -1297,7 +1342,7 @@ document.querySelectorAll("#demo-players button").forEach((b) =>
 $("demo-more").addEventListener("click", () => loadDemos({ more: true }));
 $("demo-refresh").addEventListener("click", () => loadDemos({ refresh: true }));
 $("demo-search").addEventListener("input", (e) => {
-  demoQuery = e.target.value.trim().toLocaleLowerCase("tr");
+  demoQuery = e.target.value.trim().toLocaleLowerCase(LANG);
   renderDemos();
 });
 
@@ -1317,7 +1362,7 @@ async function loadFree(refresh = false) {
     renderFree(await call("free.list", { refresh }));
   } catch (e) {
     $("free-now").innerHTML = "";
-    $("free-now").append(Object.assign(document.createElement("div"), { className: "empty", textContent: "Yüklenemedi: " + e.message }));
+    $("free-now").append(Object.assign(document.createElement("div"), { className: "empty", textContent: t("Yüklenemedi: {error}", { error: e.message }) }));
   } finally {
     btn.disabled = false;
   }
@@ -1325,18 +1370,18 @@ async function loadFree(refresh = false) {
 
 function freeLeft(end) {
   const ms = new Date(end) - Date.now();
-  if (ms <= 0) return "bitti";
+  if (ms <= 0) return t("bitti");
   const d = Math.floor(ms / DAY), h = Math.floor((ms % DAY) / 3600000);
-  return d > 0 ? `${d} gün ${h} sa kaldı` : h > 0 ? `${h} sa kaldı` : "son dakikalar";
+  return d > 0 ? t("{d} gün {h} sa kaldı", { d, h }) : h > 0 ? t("{h} sa kaldı", { h }) : t("son dakikalar");
 }
 
 function renderFree(r) {
   $("free-notify").checked = r.notify;
   const now = r.games.filter((g) => !g.upcoming), next = r.games.filter((g) => g.upcoming);
   $("free-sub").textContent = (r.errors.length ? r.errors.join(" · ") + " · " : "") +
-    "son bakış " + new Date(r.at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+    t("son bakış {time}", { time: new Date(r.at).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }) });
   const empty = (text) => Object.assign(document.createElement("div"), { className: "empty", textContent: text });
-  $("free-now").replaceChildren(...(now.length ? now.map(freeCard) : [empty("Şu an bedava verilen oyun yok.")]));
+  $("free-now").replaceChildren(...(now.length ? now.map(freeCard) : [empty(t("Şu an bedava verilen oyun yok."))]));
   $("free-next-title").hidden = $("free-next").hidden = !next.length;
   $("free-next").replaceChildren(...next.map(freeCard));
 }
@@ -1367,7 +1412,7 @@ function freeCard(g) {
   if (g.upcoming) when.textContent = demoWhen({ date: g.start, comingSoon: true });
   else if (g.end) {
     when.textContent = freeLeft(g.end);
-    when.title = new Date(g.end).toLocaleString("tr-TR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) + " saatine kadar";
+    when.title = t("{date} saatine kadar", { date: new Date(g.end).toLocaleString(LOCALE, { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) });
   }
   when.hidden = !when.textContent;
   card.querySelector(".demo-name").textContent = g.title;
@@ -1382,12 +1427,12 @@ function freeCard(g) {
     if (title) b.title = title;
     badges.append(b);
   };
-  if (g.originalPrice) badge(g.originalPrice, "price", "Normal fiyatı");
-  if (g.dlcFor != null) badge("DLC", "new", g.dlcFor ? `Oynamak için ${g.dlcFor} gerekir` : "Ana oyun gerekir");
-  for (const p of g.players) badge(p, "coop");
+  if (g.originalPrice) badge(g.originalPrice, "price", t("Normal fiyatı"));
+  if (g.dlcFor != null) badge("DLC", "new", g.dlcFor ? t("Oynamak için {game} gerekir", { game: g.dlcFor }) : t("Ana oyun gerekir"));
+  for (const p of g.players) badge(t(p), "coop");
 
   const act = card.querySelector(".demo-act");
-  act.textContent = g.upcoming ? "Mağaza" : "Mağazada al";
+  act.textContent = g.upcoming ? t("Mağaza") : t("Mağazada al");
   act.addEventListener("click", () => call("app.open", { url: g.url }));
   return card;
 }
@@ -1403,4 +1448,9 @@ function toast(message, level = "info") {
   setTimeout(() => el.remove(), level === "error" ? 7000 : 3500);
 }
 
-call("getState").then(render);
+call("getState").then((s) => {
+  render(s);
+  // Reloaded (language change): back to the page that was open.
+  const page = sessionStorage.getItem("page");
+  if (page && page !== "dpi") [...document.querySelectorAll(".nav-item")].find((b) => b.dataset.page === page)?.click();
+});

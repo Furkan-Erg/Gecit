@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Yeni sekme</title>
+  <script src="../i18n.js"></script>
   <style>
     :root { --cyan: #00f0ff; --magenta: #ff2aaa; --text: #ebe8ff; --muted: #8a85a9; color-scheme: dark; }
     * { box-sizing: border-box; }
@@ -60,7 +61,7 @@
     <a class="tile" href="https://www.youtube.com/"><span style="color:#ff5c5c">Y</span>YouTube</a>
     <a class="tile" href="https://www.reddit.com/"><span style="color:#ff8a4c">R</span>Reddit</a>
     <a class="tile" href="https://x.com/"><span>X</span>X</a>
-    <a class="tile" href="https://tr.wikipedia.org/"><span>W</span>Vikipedi</a>
+    <a class="tile" id="wiki" href="https://tr.wikipedia.org/"><span>W</span>Vikipedi</a>
     <a class="tile" href="https://github.com/"><span style="color:#3dffa2">G</span>GitHub</a>
   </div>
 
@@ -76,7 +77,9 @@
       google: ["Google", "https://www.google.com/search?q="],
     };
     const [name, base] = engines[new URLSearchParams(location.search).get("e")] ?? engines.duckduckgo;
-    document.getElementById("engine").textContent = name + " ile aranır";
+    // This page runs in a browser tab: the dictionary arrives with i18nReady, not before.
+    i18nReady.then(() => { document.getElementById("engine").textContent = t("{engine} ile aranır", { engine: name }); });
+    if (LANG === "en") document.getElementById("wiki").href = "https://en.wikipedia.org/";
     document.getElementById("search").addEventListener("submit", (e) => {
       e.preventDefault();
       const text = document.getElementById("q").value.trim();

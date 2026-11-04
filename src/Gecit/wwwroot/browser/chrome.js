@@ -18,42 +18,43 @@ host.addEventListener("message", (e) => {
 function render(s) {
   state = s;
   const box = $("tabs");
-  box.replaceChildren(...s.tabs.map((t) => {
+  box.replaceChildren(...s.tabs.map((tab) => {
     const el = document.createElement("div");
-    el.className = "tab" + (t.id === s.activeId ? " active" : "");
-    el.title = t.title;
+    el.className = "tab" + (tab.id === s.activeId ? " active" : "");
+    el.title = tab.title;
     el.innerHTML = `<span class="fav"></span><span class="title"></span>
-      <button class="x" title="Sekmeyi kapat (Ctrl+W)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+      <button class="x"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+    el.querySelector(".x").title = t("Sekmeyi kapat (Ctrl+W)");
     // Titles come from web pages: only ever textContent here, this page can command the host.
     const fav = el.querySelector(".fav");
-    if (t.loading) {
+    if (tab.loading) {
       fav.innerHTML = '<span class="spinner"></span>';
-    } else if (t.favicon?.startsWith("data:image/png;base64,")) {
+    } else if (tab.favicon?.startsWith("data:image/png;base64,")) {
       const img = document.createElement("img");
-      img.src = t.favicon;
+      img.src = tab.favicon;
       fav.append(img);
     } else {
       const letter = document.createElement("span");
       letter.className = "letter";
-      letter.textContent = (t.title || "?").trim().charAt(0).toUpperCase() || "?";
+      letter.textContent = (tab.title || "?").trim().charAt(0).toUpperCase() || "?";
       fav.append(letter);
     }
-    el.querySelector(".title").textContent = t.url ? t.title : "Yeni sekme";
+    el.querySelector(".title").textContent = tab.url ? tab.title : t("Yeni sekme");
     el.addEventListener("mousedown", (ev) => {
-      if (ev.button === 1) { ev.preventDefault(); send("close", { id: t.id }); }
+      if (ev.button === 1) { ev.preventDefault(); send("close", { id: tab.id }); }
     });
     el.addEventListener("click", (ev) => {
-      if (ev.target.closest(".x")) send("close", { id: t.id });
-      else send("activate", { id: t.id });
+      if (ev.target.closest(".x")) send("close", { id: tab.id });
+      else send("activate", { id: tab.id });
     });
     return el;
   }));
 
-  const a = s.tabs.find((t) => t.id === s.activeId);
+  const a = s.tabs.find((tab) => tab.id === s.activeId);
   $("back").disabled = !s.canBack;
   $("forward").disabled = !s.canForward;
   $("reload").classList.toggle("loading", !!a?.loading);
-  $("reload").title = a?.loading ? "Durdur" : "Yenile (F5)";
+  $("reload").title = a?.loading ? t("Durdur") : t("Yenile (F5)");
 
   if (!editing) address.value = a ? displayUrl(a.url) : "";
   const lock = $("lock");
@@ -61,7 +62,7 @@ function render(s) {
   lock.classList.toggle("insecure", !!a?.url && !a.url.startsWith("https:"));
 
   const shield = $("shield");
-  $("blocked").textContent = s.adblock ? (a?.blocked ?? 0) : "kapalı";
+  $("blocked").textContent = s.adblock ? (a?.blocked ?? 0) : t("kapalı");
   shield.classList.toggle("active", s.adblock && (a?.blocked ?? 0) > 0);
   shield.classList.toggle("off", !s.adblock);
 }

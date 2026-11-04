@@ -25,7 +25,7 @@ static class Elevated
         try { p = Process.Start(psi)!; }
         catch (Win32Exception e) when (e.NativeErrorCode == 1223)
         {
-            throw new InvalidOperationException("Yönetici izni verilmedi.");
+            throw new InvalidOperationException(L.T("Yönetici izni verilmedi."));
         }
         // Read the exit code before disposing: afterwards ExitCode throws "No process is associated with
         // this object" and every successful elevated action looked like a failure.
@@ -40,7 +40,7 @@ static class Elevated
         {
             string detail = File.Exists(AppPaths.ElevatedResultFile)
                 ? await File.ReadAllTextAsync(AppPaths.ElevatedResultFile)
-                : $"çıkış kodu {exitCode}";
+                : L.T("çıkış kodu {code}", ("code", exitCode));
             throw new InvalidOperationException(detail);
         }
     }
@@ -60,7 +60,7 @@ static class Elevated
         try { return Process.Start(psi)!; }
         catch (Win32Exception e) when (e.NativeErrorCode == 1223)
         {
-            throw new InvalidOperationException("Yönetici izni verilmedi.");
+            throw new InvalidOperationException(L.T("Yönetici izni verilmedi."));
         }
     }
 
@@ -90,7 +90,7 @@ static class Elevated
                 case "startup":    // startup <MachineRun|MachineRun32|CommonFolder> <name> <on|off>
                     var source = Enum.Parse<Boot.StartupSource>(args[1]);
                     if (source is Boot.StartupSource.UserRun or Boot.StartupSource.UserFolder)
-                        throw new ArgumentException("Kullanıcı öğeleri yönetici gerektirmez.");   // HKCU of the admin account would be wrong
+                        throw new ArgumentException(L.T("Kullanıcı öğeleri yönetici gerektirmez."));   // HKCU of the admin account would be wrong
                     Boot.StartupItems.SetEnabled(source, args[2], args[3] == "on");
                     break;
                 default:

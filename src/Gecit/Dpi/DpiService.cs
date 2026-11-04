@@ -35,7 +35,7 @@ sealed class DpiService
 
     public async Task StartAsync()
     {
-        using var sc = Open(DpiInstaller.ServiceName) ?? throw new InvalidOperationException("Hizmet kurulu değil.");
+        using var sc = Open(DpiInstaller.ServiceName) ?? throw new InvalidOperationException(L.T("Hizmet kurulu değil."));
         if (sc.Status != ServiceControllerStatus.Running)
         {
             sc.Start();
@@ -49,7 +49,7 @@ sealed class DpiService
         {
             if (DateTime.UtcNow > deadline)
                 throw new InvalidOperationException(
-                    "GoodbyeDPI başladı ama WinDivert sürücüsü yüklenmedi. Antivirüs engelliyor olabilir.");
+                    L.T("GoodbyeDPI başladı ama WinDivert sürücüsü yüklenmedi. Antivirüs engelliyor olabilir."));
             await Task.Delay(300);
         }
         // Blocked sites may still be cached with the ISP's fake answers.

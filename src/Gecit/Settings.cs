@@ -6,6 +6,8 @@ sealed class Settings
 {
     public string PresetId { get; set; } = Dpi.DpiPresets.Default.Id;
 
+    public string Language { get; set; } = "auto";   // auto (Windows display language) | tr | en
+
     // What the user last chose with the main toggle; restored when the app starts.
     public bool DpiWanted { get; set; }
 

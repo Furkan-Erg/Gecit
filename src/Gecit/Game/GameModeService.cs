@@ -117,7 +117,7 @@ sealed class GameModeService
 
     // ---- Session ----
 
-    public void StartManual() => Start(null, "Elle açıldı", manual: true);
+    public void StartManual() => Start(null, L.T("Elle açıldı"), manual: true);
 
     void Start(Process? game, string name, bool manual)
     {
@@ -140,7 +140,7 @@ sealed class GameModeService
             {
                 s.PreviousPowerPlan = current;
                 if (!PowerPlan.SetActive(PowerPlan.HighPerformance))
-                    s.Notes.Add("Güç planı değiştirilemedi.");
+                    s.Notes.Add(L.T("Güç planı değiştirilemedi."));
             }
         }
 
@@ -149,7 +149,7 @@ sealed class GameModeService
             try { game.PriorityClass = ProcessPriorityClass.High; }
             catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
             {
-                s.Notes.Add("Oyunun önceliği değiştirilemedi (oyun yönetici olarak çalışıyor ya da hile koruması izin vermiyor).");
+                s.Notes.Add(L.T("Oyunun önceliği değiştirilemedi (oyun yönetici olarak çalışıyor ya da hile koruması izin vermiyor)."));
             }
         }
         game?.Dispose();
@@ -188,7 +188,7 @@ sealed class GameModeService
                 failed++;
         }
         if (failed > 0)
-            s.Notes.Add($"{name}: {failed} işlem dondurulamadı (yönetici olarak çalışıyor olabilir).");
+            s.Notes.Add(L.T("{name}: {n} işlem dondurulamadı (yönetici olarak çalışıyor olabilir).", ("name", name), ("n", failed)));
     }
 
     static void CloseApp(GameSession s, string name, List<Process> procs)
@@ -203,7 +203,7 @@ sealed class GameModeService
         if (path is not null)
             s.Closed.Add(path);
         else if (procs.Count > 0)
-            s.Notes.Add($"{name}: penceresi yok, kapatılamadı. Bunun yerine 'Dondur' seç.");
+            s.Notes.Add(L.T("{name}: penceresi yok, kapatılamadı. Bunun yerine 'Dondur' seç.", ("name", name)));
     }
 
     public void Stop()

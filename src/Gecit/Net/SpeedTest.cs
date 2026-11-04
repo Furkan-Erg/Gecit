@@ -96,7 +96,9 @@ static class SpeedTest
         {
             // Say why: a stream that failed for real (not by our cancel) carries the server's answer.
             var reason = workers.Select(w => w.Exception?.GetBaseException()).FirstOrDefault(e => e is HttpRequestException or IOException);
-            throw new InvalidOperationException("Hız testi sunucusuna ulaşılamadı" + (reason is null ? "." : $": {reason.Message}"));
+            throw new InvalidOperationException(reason is null
+                ? L.T("Hız testi sunucusuna ulaşılamadı.")
+                : L.T("Hız testi sunucusuna ulaşılamadı: {reason}", ("reason", reason.Message)));
         }
         return (mbps, loaded.Count > 0 ? (int)Median(loaded) : idleMs);
     }
@@ -173,7 +175,7 @@ static class SpeedTest
             await Task.Delay(gap, ct);
         }
         if (list.Count == 0)
-            throw new InvalidOperationException("İnternete ping atılamıyor.");
+            throw new InvalidOperationException(L.T("İnternete ping atılamıyor."));
         return list;
     }
 

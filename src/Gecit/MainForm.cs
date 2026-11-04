@@ -21,7 +21,10 @@ sealed partial class MainForm : Form
 
     readonly WebView2 web = new() { Dock = DockStyle.Fill, DefaultBackgroundColor = Color.FromArgb(10, 8, 20) };
     readonly NotifyIcon tray = new();
+    readonly ToolStripMenuItem trayOpen = new();
     readonly ToolStripMenuItem trayToggle = new();
+    readonly ToolStripMenuItem trayBrowser = new();
+    readonly ToolStripMenuItem trayExit = new();
     readonly System.Windows.Forms.Timer poll = new() { Interval = 2000 };
     readonly Icon iconOn = LoadIcon("gecit.ico");
     readonly Icon iconOff = LoadIcon("gecit-off.ico");
@@ -45,9 +48,11 @@ sealed partial class MainForm : Form
     DpiStatus status;
     DnsStatus dns;
     string dnsKey = "";
+    string? i18nScriptId;
 
     public MainForm(bool startHidden, bool openBrowser)
     {
+        L.Set(settings.Language);
         allowShow = !startHidden;
         Text = "Geçit";
         Icon = iconOn;
@@ -109,12 +114,12 @@ sealed partial class MainForm : Form
     {
         var shellType = Type.GetTypeFromProgID("WScript.Shell") ?? throw new InvalidOperationException("WScript.Shell yok.");
         dynamic shell = Activator.CreateInstance(shellType)!;
-        string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "Gizli Tarayıcı.lnk");
+        string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), L.T("Gizli Tarayıcı") + ".lnk");
         dynamic link = shell.CreateShortcut(path);
         link.TargetPath = Environment.ProcessPath;
         link.Arguments = "--browser";
         link.IconLocation = Environment.ProcessPath + ",0";
-        link.Description = "Geçit · Gizli Tarayıcı";
+        link.Description = L.T("Geçit · Gizli Tarayıcı");
         link.Save();
     }
 
@@ -145,7 +150,7 @@ sealed partial class MainForm : Form
             if (!trayHintShown)
             {
                 trayHintShown = true;
-                tray.ShowBalloonTip(3000, "Geçit arka planda", "Engel aşma çalışmaya devam ediyor. Simgeye çift tıklayarak açabilirsin.", ToolTipIcon.Info);
+                tray.ShowBalloonTip(3000, L.T("Geçit arka planda"), L.T("Engel aşma çalışmaya devam ediyor. Simgeye çift tıklayarak açabilirsin."), ToolTipIcon.Info);
             }
             return;
         }
@@ -184,19 +189,22 @@ sealed partial class MainForm : Form
         {
             lastAnnounced = s;
             string what = s.Frozen.Count + s.Closed.Count > 0
-                ? $"{s.Frozen.Select(f => f.Name).Distinct().Count() + s.Closed.Count} uygulama durduruldu."
-                : "Güç planı ve öncelik ayarlandı.";
-            tray.ShowBalloonTip(4000, $"Oyun modu açık · {s.GameName}", what, ToolTipIcon.Info);
+                ? L.T("{n} uygulama durduruldu.", ("n", s.Frozen.Select(f => f.Name).Distinct().Count() + s.Closed.Count))
+                : L.T("Güç planı ve öncelik ayarlandı.");
+            tray.ShowBalloonTip(4000, L.T("Oyun modu açık · {game}", ("game", s.GameName)), what, ToolTipIcon.Info);
         }
         else if (s is null && lastAnnounced is not null)
         {
             lastAnnounced = null;
             if (game.LastReport is { } r)
-                tray.ShowBalloonTip(4000, "Oyun modu kapandı", $"{r.GameName}: {FormatDuration(r.Duration)}. Her şey eski haline döndü.", ToolTipIcon.Info);
+                tray.ShowBalloonTip(4000, L.T("Oyun modu kapandı"),
+                    L.T("{game}: {duration}. Her şey eski haline döndü.", ("game", r.GameName), ("duration", FormatDuration(r.Duration))), ToolTipIcon.Info);
         }
     }
 
-    static string FormatDuration(TimeSpan t) => t.TotalHours >= 1 ? $"{(int)t.TotalHours} sa {t.Minutes} dk" : $"{Math.Max(1, t.Minutes)} dk";
+    static string FormatDuration(TimeSpan t) => t.TotalHours >= 1
+        ? L.T("{h} sa {m} dk", ("h", (int)t.TotalHours), ("m", t.Minutes))
+        : L.T("{m} dk", ("m", Math.Max(1, t.Minutes)));
 
     // Peak GPU temperature for the session report (every ~10 s while a game runs).
     async void SampleGpuDuringGame()
@@ -356,9 +364,9 @@ sealed partial class MainForm : Form
         if (dns.Mode == mode)
             Notify("ok", mode switch
             {
-                DnsMode.Doh => "Şifreli DNS açık.",
-                DnsMode.Plain => "DNS değiştirildi.",
-                _ => "DNS eski haline döndü.",
+                DnsMode.Doh => L.T("Şifreli DNS açık."),
+                DnsMode.Plain => L.T("DNS değiştirildi."),
+                _ => L.T("DNS eski haline döndü."),
             });
     }
 
@@ -395,7 +403,7 @@ sealed partial class MainForm : Form
         dnsKey = key;
         // The system DNS points at the forwarder; if it died, nothing resolves. Bring it back.
         if (dns.Mode == DnsMode.Doh && dns.ForwarderState == "stopped" && !busy && DnsService.TryReviveForwarder())
-            Notify("error", "Şifreli DNS hizmeti durmuştu, yeniden başlatıldı.");
+            Notify("error", L.T("Şifreli DNS hizmeti durmuştu, yeniden başlatıldı."));
 
         if (changed || force)
         {
@@ -412,12 +420,11 @@ sealed partial class MainForm : Form
     void BuildTray()
     {
         var menu = new ContextMenuStrip();
-        menu.Items.Add("Geçit'i aç", null, (_, _) => ShowFromTray());
+        trayOpen.Click += (_, _) => ShowFromTray();
         trayToggle.Click += async (_, _) => await SetDpiAsync(status.State != DpiState.Running);
-        menu.Items.Add(trayToggle);
-        menu.Items.Add("Gizli tarayıcı", null, (_, _) => OpenBrowser());
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Çıkış", null, (_, _) => ExitApp());
+        trayBrowser.Click += (_, _) => OpenBrowser();
+        trayExit.Click += (_, _) => ExitApp();
+        menu.Items.AddRange([trayOpen, trayToggle, trayBrowser, new ToolStripSeparator(), trayExit]);
         tray.ContextMenuStrip = menu;
         tray.DoubleClick += (_, _) => ShowFromTray();
         tray.Visible = true;
@@ -428,9 +435,39 @@ sealed partial class MainForm : Form
     {
         bool on = status.State == DpiState.Running;
         tray.Icon = on ? iconOn : iconOff;
-        tray.Text = on ? "Geçit: engel aşma açık" : "Geçit: engel aşma kapalı";
-        trayToggle.Text = on ? "Engel aşmayı kapat" : "Engel aşmayı aç";
+        tray.Text = on ? L.T("Geçit: engel aşma açık") : L.T("Geçit: engel aşma kapalı");
+        trayOpen.Text = L.T("Geçit'i aç");
+        trayToggle.Text = on ? L.T("Engel aşmayı kapat") : L.T("Engel aşmayı aç");
         trayToggle.Enabled = !busy;
+        trayBrowser.Text = L.T("Gizli tarayıcı");
+        trayExit.Text = L.T("Çıkış");
+    }
+
+    // ---- Language ----
+
+    async Task SetLanguageAsync(string setting)
+    {
+        settings.Language = setting is "tr" or "en" ? setting : "auto";
+        settings.Save();
+        string before = L.Lang;
+        L.Set(settings.Language);
+        if (L.Lang == before)
+            return;
+        UpdateTray();
+        if (browser is { IsDisposed: false })
+            await browser.ApplyLanguageAsync();
+        if (web.CoreWebView2 is { } core)
+        {
+            await RegisterI18nScriptAsync(core);
+            core.Reload();   // the page keeps its open tab (app.js, sessionStorage)
+        }
+    }
+
+    async Task RegisterI18nScriptAsync(CoreWebView2 core)
+    {
+        if (i18nScriptId is not null)
+            core.RemoveScriptToExecuteOnDocumentCreated(i18nScriptId);
+        i18nScriptId = await core.AddScriptToExecuteOnDocumentCreatedAsync(L.WebScript());
     }
 
     // ---- WebView bridge ----
@@ -461,6 +498,7 @@ sealed partial class MainForm : Form
             OpenExternal(e.Uri);
         };
         core.WebMessageReceived += OnWebMessage;
+        await RegisterI18nScriptAsync(core);
         web.Source = new Uri(AppOrigin + "index.html");
     }
 
@@ -565,6 +603,9 @@ sealed partial class MainForm : Form
             case "app.autostart":
                 Autostart.Set(args!["on"]!.GetValue<bool>());
                 return BuildState();
+            case "app.language":
+                await SetLanguageAsync(args!["language"]!.GetValue<string>());
+                return BuildState();
             case "app.open":
                 OpenExternal(args!["url"]!.GetValue<string>());
                 return null;
@@ -578,7 +619,9 @@ sealed partial class MainForm : Form
         version = Application.ProductVersion.Split('+')[0],
         autostart = Autostart.IsEnabled,
         presetId = settings.PresetId,
-        presets = DpiPresets.All,
+        presets = DpiPresets.All.Select(p => new { p.Id, Name = L.T(p.Name), Description = L.T(p.Description), p.BaseArgs, p.UsesTtl }),
+        language = settings.Language,
+        lang = L.Lang,
         busy,
         dpi = new
         {
@@ -596,7 +639,7 @@ sealed partial class MainForm : Form
             forwarder = dns.ForwarderState,
             adapters = dns.Adapters.Select(a => new { a.Name, servers = a.V4Dns.Concat(a.V6Dns) }),
         },
-        dnsProviders = DnsProviders.All.Select(p => new { p.Id, p.Name, p.Tag, servers = p.V4 }),
+        dnsProviders = DnsProviders.All.Select(p => new { p.Id, p.Name, Tag = L.T(p.Tag), servers = p.V4 }),
         browser = new
         {
             open = browser is { IsDisposed: false },

@@ -61,7 +61,7 @@ sealed class LanService
         await scanning.WaitAsync(ct);
         try
         {
-            var net = LanScanner.CurrentNetwork() ?? throw new InvalidOperationException("Bir yerel ağa (modeme) bağlı değilsin.");
+            var net = LanScanner.CurrentNetwork() ?? throw new InvalidOperationException(L.T("Bir yerel ağa (modeme) bağlı değilsin."));
             var found = await LanScanner.ScanAsync(net, ct);
             DateTime now = DateTime.Now;
 
@@ -132,8 +132,8 @@ sealed class LanService
 
     // A modem's own host name ("dsldevice", "RTK_GW") means nothing to people; "Modem" does.
     static string DisplayName(KnownDevice k, bool self, bool gateway, bool random) =>
-        k.CustomName ?? (gateway ? "Modem" : k.Name)
-        ?? (k.Vendor is not null ? $"{k.Vendor} cihazı" : random ? "Gizli MAC'li cihaz" : "Bilinmeyen cihaz");
+        k.CustomName ?? (gateway ? L.T("Modem") : k.Name)
+        ?? (k.Vendor is not null ? L.T("{vendor} cihazı", ("vendor", L.T(k.Vendor))) : random ? L.T("Gizli MAC'li cihaz") : L.T("Bilinmeyen cihaz"));
 
     // Before the first scan we don't know the modem's MAC; the remembered key for this gateway IP, if any.
     readonly Dictionary<string, string> lastKeys = new();

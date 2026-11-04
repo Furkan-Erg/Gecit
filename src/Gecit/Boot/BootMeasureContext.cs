@@ -13,7 +13,7 @@ sealed class BootMeasureContext : ApplicationContext
     {
         using (var s = Assembly.GetExecutingAssembly().GetManifestResourceStream("gecit.ico")!)
             tray.Icon = new Icon(s);
-        tray.Text = "Geçit: açılış ölçülüyor";
+        tray.Text = L.T("Geçit: açılış ölçülüyor");
         tray.Visible = true;
         tray.BalloonTipClicked += (_, _) => Process.Start(new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = true })?.Dispose();
         _ = RunAsync();
@@ -26,9 +26,12 @@ sealed class BootMeasureContext : ApplicationContext
             var r = await BootMeter.MeasureAsync();
             if (r is not null)
             {
-                string ready = r.ReadySeconds is { } s ? $"Masaüstünden {s:0} sn sonra kullanıma hazırdı." : "Bilgisayar 3 dakika boyunca meşguldü.";
+                string ready = r.ReadySeconds is { } s
+                    ? L.T("Masaüstünden {s} sn sonra kullanıma hazırdı.", ("s", s.ToString("0", L.Culture)))
+                    : L.T("Bilgisayar 3 dakika boyunca meşguldü.");
                 int heavy = r.Items.Count(i => BootMeter.Impact(i.CpuMs, i.IoBytes) == "high");
-                tray.ShowBalloonTip(10000, "Açılış ölçüldü", $"{ready} {(heavy > 0 ? $"{heavy} program açılışı ciddi yavaşlatıyor. " : "")}Ayrıntılar için tıkla.", ToolTipIcon.Info);
+                string slow = heavy > 0 ? L.T("{n} program açılışı ciddi yavaşlatıyor.", ("n", heavy)) + " " : "";
+                tray.ShowBalloonTip(10000, L.T("Açılış ölçüldü"), $"{ready} {slow}{L.T("Ayrıntılar için tıkla.")}", ToolTipIcon.Info);
                 await Task.Delay(12000);
             }
         }

@@ -41,7 +41,7 @@ sealed class TrafficMonitor : IDisposable
             {
                 Stop();
                 string detail = File.Exists(AppPaths.ElevatedResultFile) ? File.ReadAllText(AppPaths.ElevatedResultFile) : "";
-                throw new InvalidOperationException("İzleme başlatılamadı. " + detail);
+                throw new InvalidOperationException(L.T("İzleme başlatılamadı.") + " " + detail);
             }
         }
         lock (gate)

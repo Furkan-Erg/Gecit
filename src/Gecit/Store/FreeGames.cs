@@ -14,12 +14,14 @@ sealed record FreeGame(
 // never become yours.
 static class FreeGames
 {
-    const string EpicUrl = "https://store-site-backend-static-ipv4.ak.epicgames.com/freeGamesPromotions?locale=tr&country=TR&allowCountries=TR";
+    // Texts in the UI language, prices and availability for Turkey.
+    static string EpicLocale => L.IsEnglish ? "en-US" : "tr";
+    static string EpicUrl => $"https://store-site-backend-static-ipv4.ak.epicgames.com/freeGamesPromotions?locale={EpicLocale}&country=TR&allowCountries=TR";
     // Free-to-keep games are specials at $0.00, so they come first when sorted by price.
-    const string SteamSearchUrl = "https://store.steampowered.com/search/results/?query&count=25&specials=1&sort_by=Price_ASC&cc=tr&l=turkish&infinite=1";
+    static string SteamSearchUrl => $"https://store.steampowered.com/search/results/?query&count=25&specials=1&sort_by=Price_ASC&cc=tr&l={L.SteamLanguage}&infinite=1";
     static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(30);
 
-    static (DateTime At, List<FreeGame> Games, List<string> Errors)? cache;
+    static (DateTime At, string Lang, List<FreeGame> Games, List<string> Errors)? cache;
 
     // When the list will change on its own: the next announced giveaway starts or a current one ends.
     public static DateTimeOffset? NextChange => cache?.Games
@@ -27,8 +29,9 @@ static class FreeGames
 
     public static async Task<(List<FreeGame> Games, List<string> Errors, DateTime At)> GetAsync(bool refresh, CancellationToken ct = default)
     {
-        if (!refresh && cache is { } c && DateTime.Now - c.At < CacheFor)
+        if (!refresh && cache is { } c && c.Lang == L.Lang && DateTime.Now - c.At < CacheFor)
             return (c.Games, c.Errors, c.At);
+        string lang = L.Lang;
         var games = new List<FreeGame>();
         var errors = new List<string>();
         var epic = EpicAsync(ct);
@@ -41,17 +44,17 @@ static class FreeGames
             }
             catch (Exception e) when (e is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException)
             {
-                errors.Add($"{store}: {(e is TaskCanceledException ? "zaman aşımı" : e.Message)}");
+                errors.Add(store + ": " + (e is TaskCanceledException ? L.T("zaman aşımı") : e.Message));
             }
         }
         games = [.. games.OrderBy(g => g.Upcoming).ThenBy(g => g.Upcoming ? g.Start : g.End)];
-        cache = (DateTime.Now, games, errors);
+        cache = (DateTime.Now, lang, games, errors);
         return (games, errors, DateTime.Now);
     }
 
     static async Task<List<FreeGame>> EpicAsync(CancellationToken ct)
     {
-        var root = JsonNode.Parse(await http.GetStringAsync(EpicUrl, ct));
+        var root = JsonNode.Parse(await FetchAsync(EpicUrl, ct));
         var list = new List<FreeGame>();
         foreach (var e in root?["data"]?["Catalog"]?["searchStore"]?["elements"]?.AsArray() ?? [])
         {
@@ -71,7 +74,7 @@ static class FreeGames
                 Str(e, "title") ?? "?",
                 Str(e, "description"),
                 EpicImage(e),
-                EpicSlug(e) is { } slug ? $"https://store.epicgames.com/tr/p/{slug}" : "https://store.epicgames.com/tr/free-games",
+                EpicSlug(e) is { } slug ? $"https://store.epicgames.com/{EpicLocale}/p/{slug}" : $"https://store.epicgames.com/{EpicLocale}/free-games",
                 o.Start, o.End, !freeNow,
                 original is null or "0" ? null : original,
                 Str(e, "offerType") == "ADD_ON" ? "" : null,
@@ -111,7 +114,7 @@ static class FreeGames
 
     static async Task<List<FreeGame>> SteamAsync(CancellationToken ct)
     {
-        var ids = AppIds(JsonNode.Parse(await http.GetStringAsync(SteamSearchUrl, ct)));
+        var ids = AppIds(JsonNode.Parse(await FetchAsync(SteamSearchUrl, ct)));
         var items = await ItemsAsync(ids, new { include_basic_info = true, include_assets = true, include_all_purchase_options = true }, ct);
         var free = ids.Where(items.ContainsKey).Select(id => items[id])
             .Where(i => i["best_purchase_option"]?["is_free_to_keep"]?.GetValue<bool>() == true).ToList();

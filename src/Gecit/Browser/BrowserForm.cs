@@ -10,7 +10,7 @@ sealed class BrowserTab(int id, WebView2 view)
     public int Id { get; } = id;
     public WebView2 View { get; } = view;
     public CoreWebView2 Core => View.CoreWebView2;
-    public string Title { get; set; } = "Yeni sekme";
+    public string Title { get; set; } = L.T("Yeni sekme");
     public string Url { get; set; } = "";
     public string? Favicon { get; set; }
     public bool Loading { get; set; }
@@ -48,7 +48,7 @@ sealed class BrowserForm : Form
         this.settings = settings;
         this.blocker = blocker;
         initialUrl = url;
-        Text = "Geçit · Gizli Tarayıcı";
+        Text = L.T("Geçit · Gizli Tarayıcı");
         Icon = icon;
         BackColor = Background;
         ClientSize = new Size(1280, 800);
@@ -62,7 +62,7 @@ sealed class BrowserForm : Form
     }
 
     SearchEngine Engine => SearchEngines.Get(settings.BrowserSearch);
-    string NewTabUrl => $"{NewTabPage}?e={Engine.Id}";
+    string NewTabUrl => $"{NewTabPage}?e={Engine.Id}&l={L.Lang}";
 
     protected override async void OnShown(EventArgs e)
     {
@@ -75,7 +75,7 @@ sealed class BrowserForm : Form
         catch (Exception ex)
         {
             File.AppendAllText(Program.ErrorLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Tarayıcı açılamadı: {ex}\n\n");
-            MessageBox.Show(this, $"Gizli tarayıcı açılamadı:\n\n{ex.Message}", "Geçit", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, L.T("Gizli tarayıcı açılamadı:\n\n{message}", ("message", ex.Message)), "Geçit", MessageBoxButtons.OK, MessageBoxIcon.Error);
             Close();
         }
     }
@@ -95,6 +95,7 @@ sealed class BrowserForm : Form
         HookShortcuts(toolbar);
         // Same reason as the main window: never show a cached toolbar from an older version.
         await core.Profile.ClearBrowsingDataAsync(CoreWebView2BrowsingDataKinds.DiskCache);
+        await RegisterI18nScriptAsync(core);
         core.Navigate(AppOrigin + "browser/chrome.html");
 
         await NewTabAsync(initialUrl);
@@ -158,7 +159,7 @@ sealed class BrowserForm : Form
         {
             tab.Title = string.IsNullOrWhiteSpace(core.DocumentTitle) ? tab.Url : core.DocumentTitle;
             if (tab == active)
-                Text = $"{tab.Title} · Gizli Tarayıcı";
+                Text = WindowTitle(tab);
             MarkDirty();
         };
         core.HistoryChanged += (_, _) => MarkDirty();
@@ -221,11 +222,33 @@ sealed class BrowserForm : Form
         active = tab;
         foreach (var t in tabs)
             t.View.Visible = t == tab;
-        Text = $"{tab.Title} · Gizli Tarayıcı";
+        Text = WindowTitle(tab);
         if (fullscreen != tab.Core.ContainsFullScreenElement)
             SetFullscreen(tab.Core.ContainsFullScreenElement);
         tab.View.Focus();
         MarkDirty();
+    }
+
+    static string WindowTitle(BrowserTab tab) => L.T("{title} · Gizli Tarayıcı", ("title", tab.Title));
+
+    // The language changed in the main window: the toolbar loads again with the new texts.
+    public async Task ApplyLanguageAsync()
+    {
+        if (active is not null)
+            Text = WindowTitle(active);
+        if (toolbar.CoreWebView2 is not { } core)
+            return;
+        await RegisterI18nScriptAsync(core);
+        core.Reload();
+    }
+
+    string? i18nScriptId;
+
+    async Task RegisterI18nScriptAsync(CoreWebView2 core)
+    {
+        if (i18nScriptId is not null)
+            core.RemoveScriptToExecuteOnDocumentCreated(i18nScriptId);
+        i18nScriptId = await core.AddScriptToExecuteOnDocumentCreatedAsync(L.WebScript());
     }
 
     void CloseTab(BrowserTab tab)

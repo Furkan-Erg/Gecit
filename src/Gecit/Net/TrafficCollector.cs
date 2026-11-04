@@ -87,7 +87,7 @@ static class TrafficCollector
         {
             return images.TryGetValue(pid, out string? image) && image.Length > 0
                 ? (image, image)
-                : ($"pid {pid}", "Kapanmış işlem");
+                : ($"pid {pid}", L.T("Kapanmış işlem"));
         }
     }
 }

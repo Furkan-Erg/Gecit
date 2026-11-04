@@ -69,7 +69,7 @@ static class Program
         try { File.AppendAllText(ErrorLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {(fatal ? "FATAL" : "ERROR")} {e}\n\n"); }
         catch (IOException) { }
         if (!fatal)
-            MessageBox.Show($"Beklenmeyen bir hata oldu:\n\n{e.Message}\n\nAyrıntılar: {ErrorLog}", "Geçit",
+            MessageBox.Show(L.T("Beklenmeyen bir hata oldu:\n\n{message}\n\nAyrıntılar: {log}", ("message", e.Message), ("log", ErrorLog)), "Geçit",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
     }
 }

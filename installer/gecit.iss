@@ -26,40 +26,68 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 LZMAUseSeparateProcess=yes
 WizardStyle=modern
-InfoBeforeFile=notice-tr.txt
+; The language box starts with the Windows display language (English when it isn't Turkish).
+; The app itself also follows the Windows language; this choice isn't passed on to it.
+LanguageDetectionMethod=uilanguage
+ShowLanguageDialog=auto
 CloseApplications=force
 RestartApplications=no
 VersionInfoVersion={#AppVersion}
 VersionInfoDescription=Geçit kurulumu
 
 [Languages]
-Name: "tr"; MessagesFile: "compiler:Languages\Turkish.isl"
+; English first: it's the fallback when the Windows language is neither of these.
+Name: "en"; MessagesFile: "compiler:Default.isl"; InfoBeforeFile: "notice-en.txt"
+Name: "tr"; MessagesFile: "compiler:Languages\Turkish.isl"; InfoBeforeFile: "notice-tr.txt"
+
+[CustomMessages]
+en.BrowserName=Private Browser
+tr.BrowserName=Gizli Tarayıcı
+en.TaskDesktopIcon=Create a Geçit desktop shortcut
+tr.TaskDesktopIcon=Masaüstüne Geçit kısayolu oluştur
+en.TaskBrowserIcon=Create a Private Browser desktop shortcut
+tr.TaskBrowserIcon=Masaüstüne Gizli Tarayıcı kısayolu oluştur
+en.TaskAutostart=Start with Windows (in the system tray)
+tr.TaskAutostart=Windows açılınca başlat (sistem tepsisinde)
+en.InstallingWebView2=Installing Microsoft Edge WebView2...
+tr.InstallingWebView2=Microsoft Edge WebView2 kuruluyor...
+en.RestartingServices=Restarting services...
+tr.RestartingServices=Hizmetler yeniden başlatılıyor...
+en.LaunchApp=Launch Geçit
+tr.LaunchApp=Geçit'i başlat
 
 [Tasks]
-Name: "desktopicon"; Description: "Masaüstüne Geçit kısayolu oluştur"
-Name: "browsericon"; Description: "Masaüstüne Gizli Tarayıcı kısayolu oluştur"; Flags: unchecked
-Name: "autostart"; Description: "Windows açılınca başlat (sistem tepsisinde)"
+Name: "desktopicon"; Description: "{cm:TaskDesktopIcon}"
+Name: "browsericon"; Description: "{cm:TaskBrowserIcon}"; Flags: unchecked
+Name: "autostart"; Description: "{cm:TaskAutostart}"
 
 [Files]
 Source: "..\publish\app\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 Source: "MicrosoftEdgeWebview2Setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall; Check: not WebView2Installed
 
+[InstallDelete]
+; Updating in the other language: don't leave the old-named browser shortcut next to the new one.
+Type: files; Name: "{autoprograms}\Gizli Tarayıcı.lnk"; Languages: en
+Type: files; Name: "{autoprograms}\Private Browser.lnk"; Languages: tr
+Type: files; Name: "{autodesktop}\Gizli Tarayıcı.lnk"; Languages: en; Tasks: browsericon
+Type: files; Name: "{autodesktop}\Private Browser.lnk"; Languages: tr; Tasks: browsericon
+
 [Icons]
 Name: "{autoprograms}\Geçit"; Filename: "{app}\Gecit.exe"
-Name: "{autoprograms}\Gizli Tarayıcı"; Filename: "{app}\Gecit.exe"; Parameters: "--browser"
+Name: "{autoprograms}\{cm:BrowserName}"; Filename: "{app}\Gecit.exe"; Parameters: "--browser"
 Name: "{autodesktop}\Geçit"; Filename: "{app}\Gecit.exe"; Tasks: desktopicon
-Name: "{autodesktop}\Gizli Tarayıcı"; Filename: "{app}\Gecit.exe"; Parameters: "--browser"; Tasks: browsericon
+Name: "{autodesktop}\{cm:BrowserName}"; Filename: "{app}\Gecit.exe"; Parameters: "--browser"; Tasks: browsericon
 
 [Registry]
 ; Same value the app's own "Windows açılınca başlat" switch writes (Autostart.cs).
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Gecit"; ValueData: """{app}\Gecit.exe"" --tray"; Tasks: autostart; Flags: uninsdeletevalue
 
 [Run]
-Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "Microsoft Edge WebView2 kuruluyor..."; Check: not WebView2Installed; Flags: waituntilterminated
+Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "{cm:InstallingWebView2}"; Check: not WebView2Installed; Flags: waituntilterminated
 ; Services that were running before an update start again with the new files.
-Filename: "{app}\Gecit.exe"; Parameters: "--elevated resume-services"; StatusMsg: "Hizmetler yeniden başlatılıyor..."; Flags: runhidden waituntilterminated
-Filename: "{app}\Gecit.exe"; Description: "Geçit'i başlat"; Flags: nowait postinstall skipifsilent runasoriginaluser
+Filename: "{app}\Gecit.exe"; Parameters: "--elevated resume-services"; StatusMsg: "{cm:RestartingServices}"; Flags: runhidden waituntilterminated
+Filename: "{app}\Gecit.exe"; Description: "{cm:LaunchApp}"; Flags: nowait postinstall skipifsilent runasoriginaluser
 ; Update from inside the app (Updater.Install): silent setup with /RELAUNCH=show|tray brings the app back.
 Filename: "{app}\Gecit.exe"; Flags: nowait runasoriginaluser; Check: RelaunchIs('show')
 Filename: "{app}\Gecit.exe"; Parameters: "--tray"; Flags: nowait runasoriginaluser; Check: RelaunchIs('tray')

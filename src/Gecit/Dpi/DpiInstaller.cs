@@ -18,7 +18,7 @@ static class DpiInstaller
 
         string exe = Path.Combine(AppPaths.InstalledDpiDir, "goodbyedpi.exe");
         ServiceTool.CreateOrUpdate(ServiceName, $"\"{exe}\" {preset.Args(dnsRedirect)}", "demand", "Geçit DPI",
-            "Geçit: DPI engellerini aşar (GoodbyeDPI).", ServiceSddl);
+            L.T("Geçit: DPI engellerini aşar (GoodbyeDPI)."), ServiceSddl);
 
         if (wasRunning)
             ServiceTool.Start(ServiceName);

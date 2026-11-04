@@ -46,7 +46,7 @@ static class DnsSetup
         ServiceTool.Stop(ServiceName);
         AppInstall.EnsureInstalledCopy();
         ServiceTool.CreateOrUpdate(ServiceName, $"\"{AppPaths.InstalledExe}\" --dns-service {provider.Id}", "auto", "Geçit DNS",
-            "Geçit: şifreli DNS (DNS-over-HTTPS). Durdurulursa DNS çalışmaz; Geçit'ten Otomatik moda geçerek kaldırın.",
+            L.T("Geçit: şifreli DNS (DNS-over-HTTPS). Durdurulursa DNS çalışmaz; Geçit'ten Otomatik moda geçerek kaldırın."),
             ServiceSddl, account: @"NT AUTHORITY\LocalService");
         ServiceTool.Sc("failure", ServiceName, "reset=", "86400", "actions=", "restart/2000/restart/5000/restart/10000");
 
@@ -56,18 +56,18 @@ static class DnsSetup
             ServiceTool.Start(ServiceName);
             // A cold service start pays for runtime start-up plus a TLS handshake per upstream.
             if (!AnswersOnLoopback(TimeSpan.FromSeconds(20)))
-                problem = "hizmet başladı ama sorgulara yanıt vermedi";
+                problem = L.T("hizmet başladı ama sorgulara yanıt vermedi");
         }
         catch (Exception e) when (e is InvalidOperationException or System.ServiceProcess.TimeoutException)
         {
-            problem = "hizmet başlatılamadı (53 numaralı port başka bir program tarafından kullanılıyor olabilir)";
+            problem = L.T("hizmet başlatılamadı (53 numaralı port başka bir program tarafından kullanılıyor olabilir)");
         }
         if (problem is not null)
         {
             ServiceTool.Remove(ServiceName);
             string log = DnsWindowsService.LogTail(6);
-            throw new InvalidOperationException($"Şifreli DNS açılamadı: {problem}. Sistem DNS'i değiştirilmedi."
-                + (log.Length > 0 ? $"\n\nHizmet günlüğü ({DnsWindowsService.LogFile}):\n{log}" : ""));
+            throw new InvalidOperationException(L.T("Şifreli DNS açılamadı: {problem}. Sistem DNS'i değiştirilmedi.", ("problem", problem))
+                + (log.Length > 0 ? "\n\n" + L.T("Hizmet günlüğü ({file}):", ("file", DnsWindowsService.LogFile)) + "\n" + log : ""));
         }
     }
 

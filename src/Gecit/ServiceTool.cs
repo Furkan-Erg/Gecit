@@ -60,7 +60,7 @@ static class ServiceTool
     public static void CopyFiles(string from, string to, string pattern)
     {
         if (!Directory.Exists(from) || !Directory.EnumerateFiles(from, pattern).Any())
-            throw new FileNotFoundException($"Kurulacak dosyalar bulunamadı: {Path.Combine(from, pattern)}");
+            throw new FileNotFoundException(L.T("Kurulacak dosyalar bulunamadı: {path}", ("path", Path.Combine(from, pattern))));
 
         foreach (string src in Directory.EnumerateFiles(from, pattern, SearchOption.AllDirectories))
         {
@@ -108,6 +108,7 @@ static class ServiceTool
         string output = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd();
         p.WaitForExit();
         if (p.ExitCode != 0)
-            throw new InvalidOperationException($"{Path.GetFileNameWithoutExtension(exe)} {args[0]} başarısız ({p.ExitCode}): {output.Trim()}");
+            throw new InvalidOperationException(L.T("{tool} {command} başarısız ({code}): {output}",
+                ("tool", Path.GetFileNameWithoutExtension(exe)), ("command", args[0]), ("code", p.ExitCode), ("output", output.Trim())));
     }
 }

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Gecit.Boot;
@@ -27,7 +26,7 @@ sealed partial class MainForm
         Updater.CleanUp();
         string current = Updater.Current.ToString();
         if (settings.LastVersion is { } last && last != current)
-            pendingToast = $"Geçit {current} sürümüne güncellendi.";
+            pendingToast = L.T("Geçit {version} sürümüne güncellendi.", ("version", current));
         if (settings.LastVersion != current)
         {
             settings.LastVersion = current;
@@ -91,13 +90,13 @@ sealed partial class MainForm
             {
                 settings.UpdateNotified = update.Version;
                 settings.Save();
-                tray.ShowBalloonTip(6000, $"Geçit {update.Version} çıktı", "Güncellemek için Geçit'i aç.", ToolTipIcon.Info);
+                tray.ShowBalloonTip(6000, L.T("Geçit {version} çıktı", ("version", update.Version)), L.T("Güncellemek için Geçit'i aç."), ToolTipIcon.Info);
             }
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException or InvalidOperationException)
         {
             // Offline or GitHub hiccup: only worth telling when the user pressed the button.
-            updateError = manual ? "Denetlenemedi: " + (e is TaskCanceledException ? "zaman aşımı" : e.Message) : updateError;
+            updateError = manual ? L.T("Denetlenemedi: {reason}", ("reason", e is TaskCanceledException ? L.T("zaman aşımı") : e.Message)) : updateError;
         }
         finally
         {
@@ -122,7 +121,7 @@ sealed partial class MainForm
         catch (Exception e)
         {
             updateInstalling = false;
-            Notify("error", e is HttpRequestException ? "İndirilemedi: " + e.Message : e.Message);
+            Notify("error", e is HttpRequestException ? L.T("İndirilemedi: {reason}", ("reason", e.Message)) : e.Message);
             PushState();
         }
     }
@@ -151,8 +150,10 @@ sealed partial class MainForm
             Post(new { @event = "lan", data = r });
             foreach (var d in r.NewDevices)
             {
-                string what = d.Vendor is not null ? $"{d.Vendor}{(d.Model is not null ? " · " + d.Model : "")}" : d.RandomMac ? "gizli MAC adresli (büyük ihtimalle telefon)" : "üreticisi bilinmiyor";
-                tray.ShowBalloonTip(8000, "Ağına yeni bir cihaz bağlandı", $"{d.Name} ({d.Ip}), {what}. Tanıyorsan Ağım'dan ad verebilirsin.", ToolTipIcon.Warning);
+                string what = d.Vendor is not null ? $"{L.T(d.Vendor)}{(d.Model is not null ? " · " + d.Model : "")}"
+                    : d.RandomMac ? L.T("gizli MAC adresli (büyük ihtimalle telefon)") : L.T("üreticisi bilinmiyor");
+                tray.ShowBalloonTip(8000, L.T("Ağına yeni bir cihaz bağlandı"),
+                    L.T("{name} ({ip}), {what}. Tanıyorsan Ağım'dan ad verebilirsin.", ("name", d.Name), ("ip", d.Ip), ("what", what)), ToolTipIcon.Warning);
             }
         }
         catch (Exception e) when (e is InvalidOperationException or System.Net.Sockets.SocketException or IOException) { }
@@ -182,7 +183,8 @@ sealed partial class MainForm
             var imp = impacts.GetValueOrDefault(i.Id);
             return new
             {
-                i.Id, i.Name, i.Publisher, i.Command, i.Enabled, i.NeedsAdmin, i.Missing, i.IsWindows, i.Hint, i.Suggested,
+                i.Id, i.Name, i.Publisher, i.Command, i.Enabled, i.NeedsAdmin, i.Missing, i.IsWindows,
+                hint = i.Hint is null ? null : L.T(i.Hint), i.Suggested,
                 source = i.Source.ToString(),
                 icon = StartupItems.IconDataUrl(i.ExePath),
                 impact = imp is null ? null : imp.Running ? BootMeter.Impact(imp.CpuMs, imp.IoBytes) : "none",
@@ -234,8 +236,8 @@ sealed partial class MainForm
         if (now.Count == 0)
             return;
         tray.ShowBalloonTip(8000,
-            now.Count == 1 ? $"{now[0].Demo.Name} demosu çıktı" : $"Takip ettiğin {now.Count} demo çıktı",
-            now.Count == 1 ? "Steam'de ücretsiz oynayabilirsin. Geçit → Demolar'dan açabilirsin." : string.Join(", ", now.Select(w => w.Demo.Name)),
+            now.Count == 1 ? L.T("{name} demosu çıktı", ("name", now[0].Demo.Name)) : L.T("Takip ettiğin {n} demo çıktı", ("n", now.Count)),
+            now.Count == 1 ? L.T("Steam'de ücretsiz oynayabilirsin. Geçit → Demolar'dan açabilirsin.") : string.Join(", ", now.Select(w => w.Demo.Name)),
             ToolTipIcon.Info);
     }
 
@@ -264,11 +266,20 @@ sealed partial class MainForm
         settings.Save();
         var g0 = fresh[0];
         tray.ShowBalloonTip(8000,
-            fresh.Count == 1 ? $"Bedava oyun: {g0.Title}" : $"{fresh.Count} oyun bedava",
-            fresh.Count == 1
-                ? $"{(g0.Store == "Epic" ? "Epic'te" : "Steam'de")}{(g0.End is { } end ? " " + end.ToLocalTime().ToString("d MMMM HH:mm", CultureInfo.GetCultureInfo("tr-TR")) + " saatine kadar" : "")} ücretsiz. Alırsan hesabında kalır."
-                : string.Join(", ", fresh.Select(g => $"{g.Title} ({g.Store})")),
+            fresh.Count == 1 ? L.T("Bedava oyun: {title}", ("title", g0.Title)) : L.T("{n} oyun bedava", ("n", fresh.Count)),
+            fresh.Count == 1 ? FreeUntil(g0) : string.Join(", ", fresh.Select(g => $"{g.Title} ({g.Store})")),
             ToolTipIcon.Info);
+    }
+
+    static string FreeUntil(FreeGame g)
+    {
+        bool epic = g.Store == "Epic";
+        if (g.End is not { } end)
+            return epic ? L.T("Epic'te ücretsiz. Alırsan hesabında kalır.") : L.T("Steam'de ücretsiz. Alırsan hesabında kalır.");
+        string date = end.ToLocalTime().ToString(L.IsEnglish ? "MMMM d, HH:mm" : "d MMMM HH:mm", L.Culture);
+        return epic
+            ? L.T("Epic'te {date} saatine kadar ücretsiz. Alırsan hesabında kalır.", ("date", date))
+            : L.T("Steam'de {date} saatine kadar ücretsiz. Alırsan hesabında kalır.", ("date", date));
     }
 
     async Task<object?> HandleFreeAsync(string cmd, JsonNode? args)
@@ -317,7 +328,7 @@ sealed partial class MainForm
                 // Only a number goes into the URL; Steam asks before installing anything.
                 int id = args!["id"]!.GetValue<int>();
                 if (!SteamInstalled)
-                    throw new InvalidOperationException("Steam bu bilgisayarda kurulu değil.");
+                    throw new InvalidOperationException(L.T("Steam bu bilgisayarda kurulu değil."));
                 Process.Start(new ProcessStartInfo($"steam://install/{id}") { UseShellExecute = true })?.Dispose();
                 return null;
             default:
@@ -364,7 +375,7 @@ sealed partial class MainForm
             case "boot.set":
                 string id = args!["id"]!.GetValue<string>();
                 bool on = args["on"]!.GetValue<bool>();
-                var item = StartupItems.List().FirstOrDefault(i => i.Id == id) ?? throw new InvalidOperationException("Öğe artık yok.");
+                var item = StartupItems.List().FirstOrDefault(i => i.Id == id) ?? throw new InvalidOperationException(L.T("Öğe artık yok."));
                 if (item.NeedsAdmin)
                     await Elevated.RunAsync("startup", item.Source.ToString(), item.Key, on ? "on" : "off");
                 else

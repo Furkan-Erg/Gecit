@@ -176,7 +176,7 @@ static class StartupItems
     public static void SetEnabled(StartupSource source, string key, bool enabled)
     {
         if (!List().Any(i => i.Source == source && i.Key == key))
-            throw new ArgumentException($"Başlangıç öğesi bulunamadı: {key}");
+            throw new ArgumentException(L.T("Başlangıç öğesi bulunamadı: {key}", ("key", key)));
         var data = new byte[12];
         data[0] = (byte)(enabled ? 2 : 3);
         if (!enabled)
